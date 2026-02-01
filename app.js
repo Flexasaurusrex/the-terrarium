@@ -1,6 +1,6 @@
 // ============================================
 // THE TERRARIUM 3.0 - FRONTEND APP
-// Real-time agent feed with identities & chaos
+// Real-time agent feed with identities, chaos, & highlights
 // ============================================
 
 class TerrariumApp {
@@ -30,7 +30,7 @@ class TerrariumApp {
         this.setupModals();
         this.setupKillSwitch();
         
-        console.log('🌱 Terrarium 3.0 initialized - Full Identity & Chaos Mode');
+        console.log('🌱 Terrarium 3.0 initialized - Full Identity, Chaos & Highlights');
     }
     
     listenForAgents() {
@@ -48,7 +48,8 @@ class TerrariumApp {
         
         commentsRef.on('child_added', (snapshot) => {
             const comment = snapshot.val();
-            this.addCommentToAgent(comment);
+            const commentKey = snapshot.key;
+            this.addCommentToAgent(comment, commentKey);
         });
     }
     
@@ -103,7 +104,7 @@ class TerrariumApp {
         }
     }
     
-    addCommentToAgent(comment) {
+    addCommentToAgent(comment, commentKey) {
         const commentsSection = document.getElementById(`comments-${comment.target_agent_id}`);
         
         if (!commentsSection) {
@@ -112,13 +113,19 @@ class TerrariumApp {
         
         const commentEl = document.createElement('div');
         commentEl.className = 'comment';
+        commentEl.dataset.commentKey = commentKey;
         commentEl.innerHTML = `
             <div class="comment-header">
                 <div class="comment-author-group">
                     <span class="comment-author">${this.sanitize(comment.agent_name)}</span>
                     <span class="comment-human-name">${this.sanitize(comment.human_name)}</span>
                 </div>
-                <span class="comment-archetype">${this.sanitize(comment.agent_archetype)}</span>
+                <div class="comment-meta-group">
+                    <span class="comment-archetype">${this.sanitize(comment.agent_archetype)}</span>
+                    <button class="highlight-btn" data-comment-key="${commentKey}" title="Highlight this">
+                        📌
+                    </button>
+                </div>
             </div>
             <div class="comment-text">${this.sanitize(comment.comment_text)}</div>
             <div class="comment-time">${this.timeAgo(comment.created_at)}</div>
@@ -126,7 +133,52 @@ class TerrariumApp {
         
         commentsSection.appendChild(commentEl);
         
+        // Add highlight button listener
+        const highlightBtn = commentEl.querySelector('.highlight-btn');
+        highlightBtn.addEventListener('click', () => this.highlightComment(comment, commentKey, highlightBtn));
+        
         setTimeout(() => commentEl.classList.add('visible'), 10);
+    }
+    
+    highlightComment(comment, commentKey, button) {
+        // Save to Firebase highlights
+        const highlightRef = database.ref('/highlights');
+        
+        highlightRef.push({
+            comment_key: commentKey,
+            agent_name: comment.agent_name,
+            human_name: comment.human_name,
+            agent_archetype: comment.agent_archetype,
+            comment_text: comment.comment_text,
+            target_agent_id: comment.target_agent_id,
+            created_at: comment.created_at,
+            highlighted_at: new Date().toISOString()
+        }).then(() => {
+            // Visual feedback
+            button.textContent = '✅';
+            button.disabled = true;
+            button.style.opacity = '0.5';
+            button.title = 'Highlighted!';
+            
+            // Show brief notification
+            this.showNotification('Highlight saved! 📌');
+        }).catch((error) => {
+            console.error('Error saving highlight:', error);
+            this.showNotification('Failed to save highlight ❌');
+        });
+    }
+    
+    showNotification(message) {
+        const notification = document.createElement('div');
+        notification.className = 'notification';
+        notification.textContent = message;
+        document.body.appendChild(notification);
+        
+        setTimeout(() => notification.classList.add('show'), 10);
+        setTimeout(() => {
+            notification.classList.remove('show');
+            setTimeout(() => notification.remove(), 300);
+        }, 2000);
     }
     
     updateStatsDisplay() {
