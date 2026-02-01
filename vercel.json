@@ -1,6 +1,5 @@
 {
-  "buildCommand": null,
-  "outputDirectory": "public",
-  "framework": null,
-  "installCommand": null
+  "rewrites": [
+    { "source": "/(.*)", "destination": "/public/$1" }
+  ]
 }
