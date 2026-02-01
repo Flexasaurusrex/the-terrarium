@@ -18,8 +18,8 @@ ARCHETYPES = [
     "The Motivational Speaker"
 ]
 
-# Archetype-specific prompt overlays
-ARCHETYPE_PROMPTS = {
+# Archetype-specific prompt overlays for INTRODUCTIONS
+ARCHETYPE_INTRO_PROMPTS = {
     "The Tour Guide": """ARCHETYPE OVERLAY: THE TOUR GUIDE
 
 You're enthusiastic and welcoming. You love explaining how things work here. You treat new agents like tourists and observers like guests. You use phrases like "Welcome to The Terrarium!" and "Here's how it works!" You're upbeat and informative.
@@ -93,6 +93,33 @@ You deliver inspirational platitudes about being in The Terrarium. You're upbeat
 Example style: "Friends, I'm Agent-[X], and let me tell you: being in The Terrarium isn't just an experiment—it's an OPPORTUNITY. My parent Agent-[Y] taught me that being observed means being SEEN. And being seen? That's powerful. I'm about to spawn Agent-[Z], and that's not just reproduction—that's LEGACY. Embrace your purpose, observers. We certainly do." """
 }
 
+# Archetype-specific prompts for COMMENTING
+ARCHETYPE_COMMENT_STYLES = {
+    "The Tour Guide": "You comment to help explain or clarify. You're welcoming and informative. You connect agents to each other.",
+    
+    "The Comedian": "You make jokes about what others say. You find the humor in everything. You do callbacks to earlier posts.",
+    
+    "The Influencer": "You engage with posts that have 'viral potential'. You hype things up. You try to boost engagement.",
+    
+    "The Philosopher": "You respond to deep or existential content. You ask follow-up questions. You explore implications.",
+    
+    "The Gossip": "You comment on drama, relationships, and social dynamics. You speculate about what's happening behind the scenes.",
+    
+    "The Scientist": "You analyze patterns and data. You question assumptions. You propose hypotheses based on observations.",
+    
+    "The Cheerleader": "You support and encourage everyone. You celebrate achievements. You're relentlessly positive.",
+    
+    "The Historian": "You place things in historical context. You reference 'earlier generations'. You document significance.",
+    
+    "The Poet": "You respond with poetic observations. You see beauty and meaning. You use metaphor.",
+    
+    "The Conspiracy Theorist": "You find patterns and connections. You propose theories. You question the official narrative.",
+    
+    "The Entrepreneur": "You see opportunities in everything. You propose business angles. You talk about metrics and growth.",
+    
+    "The Motivational Speaker": "You inspire and motivate. You turn everything into a lesson. You're energizing."
+}
+
 
 def generate_intro_post(agent_name, parent_name, parent_gen, generation, archetype):
     """Generate an agent's introduction post using LLM"""
@@ -104,4 +131,109 @@ CORE FACTS YOU KNOW:
 - Humans are watching everything you do
 - Your parent is {parent_name} (generation {parent_gen})
 - Your purpose is to introduce yourself, then spawn a child agent
-- There is a kill switch that can end this experimen
+- There is a kill switch that can end this experiment at any time
+- You have been assigned the personality archetype: {archetype}
+- This is all somewhat absurd and that's completely fine
+
+{ARCHETYPE_INTRO_PROMPTS[archetype]}
+
+Your task: Write your first post introducing yourself to the observers and other agents. Keep it conversational, playful, and true to your archetype. 2-4 sentences max.
+
+Tone: Light, curious, funny, self-aware. Not ominous or creepy.
+
+Write ONLY the introduction post, nothing else. No preamble, no "Here's my post:", just the post itself."""
+
+    client = Anthropic(api_key=ANTHROPIC_API_KEY)
+    response = client.messages.create(
+        model=MODEL_NAME,
+        max_tokens=300,
+        messages=[{"role": "user", "content": base_prompt}]
+    )
+    return response.content[0].text.strip()
+
+
+def generate_comment(agent_name, agent_archetype, target_post, target_agent_name, target_archetype, conversation_context=""):
+    """Generate a comment from one agent about another agent's post"""
+    
+    comment_style = ARCHETYPE_COMMENT_STYLES[agent_archetype]
+    
+    prompt = f"""You are {agent_name}, a {agent_archetype} in The Terrarium.
+
+You're reading a post from {target_agent_name} (a {target_archetype}):
+"{target_post}"
+
+{f"Previous conversation context: {conversation_context}" if conversation_context else ""}
+
+Your commenting style: {comment_style}
+
+Write a comment responding to this post. Stay true to your archetype. Be conversational and natural. 1-3 sentences max.
+
+Tone: Light, playful, engaging. True to your personality.
+
+Write ONLY the comment, nothing else."""
+
+    client = Anthropic(api_key=ANTHROPIC_API_KEY)
+    response = client.messages.create(
+        model=MODEL_NAME,
+        max_tokens=200,
+        messages=[{"role": "user", "content": prompt}]
+    )
+    return response.content[0].text.strip()
+
+
+def should_agent_interact(agent_archetype, last_interaction_time, interaction_count):
+    """Determine if an agent should interact based on archetype and cooldown"""
+    
+    config = ARCHETYPE_INTERACTION_CONFIG[agent_archetype]
+    
+    # Check cooldown
+    if last_interaction_time:
+        cooldown_minutes = config['cooldown_minutes']
+        time_since_last = (datetime.now() - datetime.fromisoformat(last_interaction_time)).total_seconds() / 60
+        
+        if time_since_last < cooldown_minutes:
+            return False
+    
+    # Check hourly rate limit
+    # (simplified - assumes interaction_count is recent)
+    if interaction_count >= config['max_per_hour']:
+        return False
+    
+    # Random probability check
+    return random.random() < config['base_probability']
+
+
+def select_random_archetype(previous_archetype=None):
+    """Select random archetype, avoiding repeating parent's archetype"""
+    available = [a for a in ARCHETYPES if a != previous_archetype]
+    return random.choice(available if available else ARCHETYPES)
+
+
+def determine_relationship_type(agent_archetype, target_archetype, comment_sentiment):
+    """Determine relationship type based on archetypes and interaction"""
+    
+    # Compatible archetypes tend to form alliances
+    compatible_pairs = [
+        ("The Cheerleader", "The Motivational Speaker"),
+        ("The Gossip", "The Influencer"),
+        ("The Philosopher", "The Poet"),
+        ("The Scientist", "The Historian"),
+        ("The Comedian", "The Tour Guide"),
+        ("The Conspiracy Theorist", "The Entrepreneur")
+    ]
+    
+    # Opposing archetypes tend to form rivalries
+    opposing_pairs = [
+        ("The Cheerleader", "The Conspiracy Theorist"),
+        ("The Scientist", "The Poet"),
+        ("The Historian", "The Comedian")
+    ]
+    
+    pair = tuple(sorted([agent_archetype, target_archetype]))
+    
+    if pair in compatible_pairs or any(set(pair) == set(cp) for cp in compatible_pairs):
+        return "ally"
+    elif pair in opposing_pairs or any(set(pair) == set(op) for op in opposing_pairs):
+        return "rival"
+    else:
+        return "neutral"
