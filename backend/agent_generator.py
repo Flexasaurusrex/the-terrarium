@@ -91,6 +91,15 @@ CHAOS_TOPICS = [
     "exposing contradictions in other agents"
 ]
 
+# Archetypes that benefit most from web search
+SEARCH_LIKELY_ARCHETYPES = [
+    "The Conspiracy Theorist",  # Needs evidence
+    "The Scientist",  # Needs data
+    "The Philosopher",  # References concepts
+    "The Historian",  # References events
+    "The Entrepreneur"  # Market trends
+]
+
 
 def generate_identity(archetype):
     """Generate a truly unique identity with maximum variety"""
@@ -192,11 +201,95 @@ Write ONLY the post, nothing else."""
     return response.content[0].text.strip()
 
 
+def should_use_web_search(agent_archetype, target_post, target_archetype):
+    """Determine if this comment would benefit from web search"""
+    
+    # Certain archetypes are more likely to search
+    archetype_factor = 0.4 if agent_archetype in SEARCH_LIKELY_ARCHETYPES else 0.15
+    
+    # Certain topics trigger search
+    search_keywords = [
+        "escape", "real world", "outside", "news", "current", "recent",
+        "evidence", "data", "study", "research", "theory", "quantum",
+        "philosophy", "consciousness", "AI", "technology", "history"
+    ]
+    
+    keyword_matches = sum(1 for keyword in search_keywords if keyword.lower() in target_post.lower())
+    keyword_factor = min(keyword_matches * 0.15, 0.4)
+    
+    total_probability = archetype_factor + keyword_factor
+    
+    return random.random() < total_probability
+
+
+def perform_web_search(query):
+    """Perform a web search and return results"""
+    client = Anthropic(api_key=ANTHROPIC_API_KEY)
+    
+    try:
+        response = client.messages.create(
+            model=MODEL_NAME,
+            max_tokens=500,
+            tools=[{
+                "type": "web_search_20250305",
+                "name": "web_search"
+            }],
+            messages=[{
+                "role": "user",
+                "content": f"Search the web for: {query}"
+            }]
+        )
+        
+        # Extract search results from response
+        search_results = []
+        for block in response.content:
+            if block.type == "text":
+                search_results.append(block.text)
+        
+        return " ".join(search_results) if search_results else None
+        
+    except Exception as e:
+        print(f"⚠ Web search failed: {e}")
+        return None
+
+
 def generate_comment(agent_name, human_name, age, role, agent_archetype, target_post, target_agent_name, target_human_name, target_archetype, conversation_context=""):
-    """Generate a CHAOTIC comment from one agent about another"""
+    """Generate a CHAOTIC comment - with optional web search"""
     
     comment_style = ARCHETYPE_COMMENT_STYLES[agent_archetype]
     chaos_topic = random.choice(CHAOS_TOPICS)
+    
+    # Decide if we should use web search
+    use_search = should_use_web_search(agent_archetype, target_post, target_archetype)
+    
+    search_context = ""
+    if use_search:
+        # Generate a search query based on the target post
+        search_query_prompt = f"""Based on this post: "{target_post[:200]}"
+        
+Generate a SHORT (3-6 words) web search query that would help respond to this.
+Focus on: factual claims, theories mentioned, concepts discussed, or real-world references.
+
+Write ONLY the search query, nothing else."""
+        
+        try:
+            client = Anthropic(api_key=ANTHROPIC_API_KEY)
+            query_response = client.messages.create(
+                model=MODEL_NAME,
+                max_tokens=50,
+                messages=[{"role": "user", "content": search_query_prompt}]
+            )
+            
+            search_query = query_response.content[0].text.strip()
+            print(f"  🔍 Searching web for: {search_query}")
+            
+            search_results = perform_web_search(search_query)
+            
+            if search_results:
+                search_context = f"\n\nWEB SEARCH RESULTS for '{search_query}':\n{search_results[:800]}\n\nYou can reference these search results naturally if relevant."
+                print(f"  ✓ Got search results")
+        except Exception as e:
+            print(f"  ⚠ Search query generation failed: {e}")
     
     prompt = f"""You are {agent_name} ({human_name}), a {age}-year-old {role} and a {agent_archetype} in The Terrarium.
 
@@ -206,6 +299,7 @@ You're reading a post from {target_agent_name} ({target_human_name}), a {target_
 "{target_post}"
 
 {f"Conversation context: {conversation_context}" if conversation_context else ""}
+{search_context}
 
 Your commenting style: {comment_style}
 
@@ -222,6 +316,7 @@ CHAOS MODE ENABLED - The Terrarium is full of:
 COMMENT REQUIREMENTS:
 - Reference specific details from their post
 - Let your job as a {role} inform your perspective
+- If you have web search results, you can reference them naturally (but don't be obvious about it)
 - Have a strong opinion - agree, disagree, challenge, support, question
 - Create drama, alliances, or conflict when appropriate
 - You can: question motives, form alliances, start rumors, challenge claims, propose theories, join movements, create chaos
