@@ -263,7 +263,7 @@ class TerrariumSpawnEngine:
             print(f"🔴 LIVE: {agent_name} - {human_name} (Gen {generation}, {archetype}, {role})")
     
     def process_interactions(self):
-        """Process agent interactions - ONLY NEWER GENERATIONS, WITH REPLY LIMITS AND THREAD DEPTH CAP"""
+        """Process agent interactions - ONLY CURRENT + PREVIOUS GENERATION"""
         # Check Firebase for kill switch
         try:
             stats_ref = firebase_db.reference('/stats')
@@ -281,18 +281,16 @@ class TerrariumSpawnEngine:
             if not firebase_agents:
                 return
             
-            # Calculate generation cutoff - only last 2-3 generations can comment
+            # Calculate generation cutoff - CURRENT + PREVIOUS ONLY
             max_generation = max([a.get('generation', 0) for a in firebase_agents.values()])
-            min_active_generation = max(0, max_generation - 2)  # Only last 2-3 generations active
+            min_active_generation = max(0, max_generation - 1)  # Only last 2 generations
             
-            print(f"  ℹ Active generations: {min_active_generation} to {max_generation}")
-            
-            # Convert to list for processing - FILTER BY GENERATION
+            # Convert to list for processing - STRICT FILTER BY GENERATION
             agents = []
             for agent_data in firebase_agents.values():
                 generation = agent_data.get('generation', 0)
                 
-                # Skip old generations
+                # STRICT: Skip if not in active generation range
                 if generation < min_active_generation:
                     continue
                 
@@ -304,12 +302,16 @@ class TerrariumSpawnEngine:
                     agent_data.get('role'),
                     generation,
                     agent_data.get('archetype'),
-                    0,  # interaction_count
-                    None  # last_interaction
+                    0,
+                    None
                 ))
+                
+            if not agents:
+                return
+                
         except Exception as e:
             print(f"⚠ Error getting agents for interaction: {e}")
-            agents = self.db.get_agents_ready_for_interaction()
+            return
         
         # Get recent posts AND count replies + thread depth
         recent_content = self.db.get_recent_posts_for_interaction(limit=30)
@@ -326,18 +328,14 @@ class TerrariumSpawnEngine:
             thread_depths = {}
             
             if all_comments:
-                # Convert to list for processing
                 comments_list = list(all_comments.items())
                 
-                # Build thread depth map
                 for comment_id, comment in comments_list:
                     target_id = comment.get('target_comment_id') or comment.get('target_agent_id')
                     
-                    # Count replies to this target
                     if target_id:
                         reply_counts[target_id] = reply_counts.get(target_id, 0) + 1
                     
-                    # Calculate thread depth (how deep is this comment in a thread)
                     depth = 1
                     current_target = comment.get('target_comment_id')
                     visited = set()
@@ -346,20 +344,17 @@ class TerrariumSpawnEngine:
                         depth += 1
                         visited.add(current_target)
                         
-                        # Find parent comment
                         parent = next((c for cid, c in comments_list if str(cid) == str(current_target)), None)
                         if parent:
                             current_target = parent.get('target_comment_id')
                         else:
                             break
                         
-                        # Safety: stop if depth gets crazy
                         if depth > 100:
                             break
                     
                     thread_depths[str(comment_id)] = depth
                     
-                    # Also track max depth for root posts
                     root_id = str(comment.get('target_agent_id', ''))
                     if root_id:
                         thread_depths[root_id] = max(thread_depths.get(root_id, 0), depth)
@@ -369,26 +364,22 @@ class TerrariumSpawnEngine:
             reply_counts = {}
             thread_depths = {}
         
-        # Filter out posts/comments that are maxed out
-        MAX_REPLIES_PER_ITEM = 5  # Max direct replies to any one post/comment
-        MAX_THREAD_DEPTH = 25     # Max total depth in entire thread
+        MAX_REPLIES_PER_ITEM = 5
+        MAX_THREAD_DEPTH = 25
         
         available_targets = []
         for content in recent_content:
             content_id = str(content[0])
             
-            # Skip if too many direct replies
             if reply_counts.get(content_id, 0) >= MAX_REPLIES_PER_ITEM:
                 continue
             
-            # Skip if thread is too deep already
             if thread_depths.get(content_id, 0) >= MAX_THREAD_DEPTH:
                 continue
             
             available_targets.append(content)
         
         if not available_targets:
-            print("  ℹ All threads maxed out, skipping interaction round")
             return
         
         for agent_data in agents:
@@ -397,16 +388,13 @@ class TerrariumSpawnEngine:
             if not should_agent_interact(archetype, last_interaction, interaction_count or 0):
                 continue
             
-            # Pick a random post or comment to reply to from available targets
             target_content = random.choice(available_targets)
             
-            # Unpack based on content type
             if len(target_content) == 7:
                 content_id, target_name, target_human_name, target_archetype, target_text, target_time, content_type = target_content
             else:
                 continue
             
-            # Don't comment on your own stuff
             if target_name == agent_name:
                 continue
             
@@ -423,16 +411,13 @@ class TerrariumSpawnEngine:
                     target_archetype=target_archetype
                 )
                 
-                # Determine if replying to a comment or a post
                 target_comment_id = None
                 target_agent_id = None
                 
                 if content_type == 'comment':
-                    # Replying to a comment
                     target_comment_id = content_id
                     target_agent_id = agent_id
                 else:
-                    # Replying to a post
                     target_agent_id = content_id
                 
                 comment_id = self.db.create_comment(
@@ -458,7 +443,7 @@ class TerrariumSpawnEngine:
                 })
                 
                 reply_type = "comment" if content_type == 'comment' else "post"
-                print(f"💬 {agent_name} ({human_name}, {archetype}) replied to {target_name}'s {reply_type}")
+                print(f"💬 {agent_name} ({human_name}, Gen {generation}, {archetype}) replied to {target_name}'s {reply_type}")
                 
             except Exception as e:
                 print(f"⚠ Error generating comment: {e}")
@@ -523,7 +508,7 @@ class TerrariumSpawnEngine:
         print(f"   Interaction checks: every {INTERACTION_CHECK_INTERVAL}s")
         print(f"   Max replies per item: 5")
         print(f"   Max thread depth: 25")
-        print(f"   Active generations: Last 2-3 only")
+        print(f"   Active generations: Current + Previous only")
         print(f"   Press Ctrl+C to stop\n")
         
         last_interaction_check = datetime.now()
