@@ -17,31 +17,25 @@ class TerrariumSpawnEngine:
         self.topic_counter = 0
         
     def init_firebase(self):
-        """Initialize Firebase for real-time updates"""
-        try:
-            # Initialize with environment variables (no JSON file needed)
-            if not firebase_admin._apps:
-                cred = credentials.Certificate({
-                    "type": "service_account",
-                    "project_id": os.environ.get('FIREBASE_PROJECT_ID'),
-                    "private_key_id": os.environ.get('FIREBASE_PRIVATE_KEY_ID'),
-                    "private_key": os.environ.get('FIREBASE_PRIVATE_KEY', '').replace('\\\\n', '\n'),
-                    "client_email": os.environ.get('FIREBASE_CLIENT_EMAIL'),
-                    "client_id": os.environ.get('FIREBASE_CLIENT_ID'),
-                    "auth_uri": "https://accounts.google.com/o/oauth2/auth",
-                    "token_uri": "https://oauth2.googleapis.com/token",
-                    "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
-                    "client_x509_cert_url": os.environ.get('FIREBASE_CLIENT_CERT_URL')
-                })
-                firebase_admin.initialize_app(cred, {
-                    'databaseURL': os.environ.get('FIREBASE_DB_URL')
-                })
-            print("✓ Firebase initialized")
-        except Exception as e:
-            print(f"⚠ Firebase init failed: {e}")
-            import traceback
-            traceback.print_exc()
-            raise
+    """Initialize Firebase for real-time updates"""
+    try:
+        # Get credentials from config (already parsed from env var)
+        creds = FIREBASE_CREDENTIALS.copy()
+        
+        # Fix the private key - replace literal \n with actual newlines
+        if 'private_key' in creds:
+            creds['private_key'] = creds['private_key'].replace('\\n', '\n')
+        
+        cred = credentials.Certificate(creds)
+        firebase_admin.initialize_app(cred, {
+            'databaseURL': FIREBASE_DB_URL
+        })
+        print("✓ Firebase initialized")
+    except Exception as e:
+        print(f"⚠ Firebase init failed: {e}")
+        import traceback
+        traceback.print_exc()
+        raise
     
     def generate_unique_identity(self, archetype):
         """Generate identity with uniqueness check against Firebase"""
