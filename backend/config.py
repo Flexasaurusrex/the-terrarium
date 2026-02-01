@@ -15,6 +15,9 @@ FIREBASE_DB_URL = os.getenv('FIREBASE_DB_URL')
 LLM_PROVIDER = 'anthropic'
 MODEL_NAME = 'claude-sonnet-4-20250514'
 
+# SCENARIO MODE - SWITCH BETWEEN TERRARIUMS
+SCENARIO_MODE = os.getenv('SCENARIO_MODE', 'truman')  # 'truman' or 'legends'
+
 # Spawn Configuration - COST OPTIMIZED
 BATCH_SIZE = 2
 RELEASE_INTERVAL = 90
