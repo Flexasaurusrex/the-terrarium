@@ -297,7 +297,7 @@ Write ONLY your intro post, nothing else."""
     response = client.messages.create(
         model=MODEL_NAME,
         max_tokens=300,
-        temperature=1.1,  # Higher temp for more variety
+        temperature=1,  # Higher temp for more variety
         messages=[{"role": "user", "content": base_prompt}]
     )
     return response.content[0].text.strip()
