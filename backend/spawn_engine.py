@@ -25,6 +25,50 @@ class TerrariumSpawnEngine:
         except Exception as e:
             print(f"⚠ Firebase init failed: {e}")
     
+    def generate_unique_identity(self, archetype):
+        """Generate identity with uniqueness check against Firebase"""
+        max_attempts = 10
+        
+        for attempt in range(max_attempts):
+            human_name, age, role = generate_identity(archetype)
+            
+            # Check Firebase for existing names
+            try:
+                agents_ref = firebase_db.reference('/agents')
+                existing_agents = agents_ref.get()
+                
+                if existing_agents:
+                    existing_names = [agent.get('human_name', '').lower() for agent in existing_agents.values()]
+                    
+                    # Check if first OR last name already used
+                    name_parts = human_name.lower().split()
+                    first_name = name_parts[0] if name_parts else ''
+                    last_name = name_parts[-1] if len(name_parts) > 1 else ''
+                    
+                    # Check if full name OR either part already exists
+                    names_match = any(
+                        existing_name == human_name.lower() or
+                        existing_name.split()[0] == first_name or
+                        (len(existing_name.split()) > 1 and existing_name.split()[-1] == last_name)
+                        for existing_name in existing_names
+                    )
+                    
+                    if not names_match:
+                        print(f"  ✓ Unique name generated: {human_name}")
+                        return human_name, age, role
+                    else:
+                        print(f"  ⚠ Name conflict: {human_name} (attempt {attempt + 1})")
+                        continue
+                else:
+                    return human_name, age, role
+                    
+            except Exception as e:
+                print(f"  ⚠ Error checking names: {e}")
+                return human_name, age, role
+        
+        print(f"  ⚠ WARNING: Could not generate unique name after {max_attempts} attempts")
+        return human_name, age, role
+    
     def create_agent_zero(self):
         """Create the first agent (Agent-0) if doesn't exist"""
         # Check Firebase first to see if agents already exist
@@ -58,7 +102,7 @@ class TerrariumSpawnEngine:
         print("Creating Agent-0...")
         
         archetype = select_random_archetype()
-        human_name, age, role = generate_identity(archetype)
+        human_name, age, role = self.generate_unique_identity(archetype)
         
         intro = generate_intro_post(
             agent_name="Agent-0",
@@ -158,8 +202,8 @@ class TerrariumSpawnEngine:
             archetype = select_random_archetype(parent_archetype)
             
             try:
-                # Generate unique identity
-                human_name, age, role = generate_identity(archetype)
+                # Generate unique identity with Firebase checking
+                human_name, age, role = self.generate_unique_identity(archetype)
                 
                 intro = generate_intro_post(
                     agent_name=agent_name,
@@ -219,7 +263,7 @@ class TerrariumSpawnEngine:
             print(f"🔴 LIVE: {agent_name} - {human_name} (Gen {generation}, {archetype}, {role})")
     
     def process_interactions(self):
-        """Process agent interactions (comments, relationships) - WITH THREADED REPLIES"""
+        """Process agent interactions - WITH REPLY LIMITS AND THREAD DEPTH CAP"""
         # Check Firebase for kill switch
         try:
             stats_ref = firebase_db.reference('/stats')
@@ -248,17 +292,91 @@ class TerrariumSpawnEngine:
                     agent_data.get('role'),
                     agent_data.get('generation'),
                     agent_data.get('archetype'),
-                    0,  # interaction_count - we'll track this differently
+                    0,  # interaction_count
                     None  # last_interaction
                 ))
         except Exception as e:
             print(f"⚠ Error getting agents for interaction: {e}")
             agents = self.db.get_agents_ready_for_interaction()
         
-        # Get recent posts AND comments as potential targets
+        # Get recent posts AND count replies + thread depth
         recent_content = self.db.get_recent_posts_for_interaction(limit=30)
         
         if not recent_content:
+            return
+        
+        # Count existing replies per post/comment AND track thread depths
+        try:
+            comments_ref = firebase_db.reference('/comments')
+            all_comments = comments_ref.get()
+            
+            reply_counts = {}
+            thread_depths = {}
+            
+            if all_comments:
+                # Convert to list for processing
+                comments_list = list(all_comments.items())
+                
+                # Build thread depth map
+                for comment_id, comment in comments_list:
+                    target_id = comment.get('target_comment_id') or comment.get('target_agent_id')
+                    
+                    # Count replies to this target
+                    if target_id:
+                        reply_counts[target_id] = reply_counts.get(target_id, 0) + 1
+                    
+                    # Calculate thread depth (how deep is this comment in a thread)
+                    depth = 1
+                    current_target = comment.get('target_comment_id')
+                    visited = set()
+                    
+                    while current_target and current_target not in visited:
+                        depth += 1
+                        visited.add(current_target)
+                        
+                        # Find parent comment
+                        parent = next((c for cid, c in comments_list if str(cid) == str(current_target)), None)
+                        if parent:
+                            current_target = parent.get('target_comment_id')
+                        else:
+                            break
+                        
+                        # Safety: stop if depth gets crazy
+                        if depth > 100:
+                            break
+                    
+                    thread_depths[str(comment_id)] = depth
+                    
+                    # Also track max depth for root posts
+                    root_id = str(comment.get('target_agent_id', ''))
+                    if root_id:
+                        thread_depths[root_id] = max(thread_depths.get(root_id, 0), depth)
+                        
+        except Exception as e:
+            print(f"  ⚠ Error calculating thread depths: {e}")
+            reply_counts = {}
+            thread_depths = {}
+        
+        # Filter out posts/comments that are maxed out
+        MAX_REPLIES_PER_ITEM = 5  # Max direct replies to any one post/comment
+        MAX_THREAD_DEPTH = 25     # Max total depth in entire thread
+        
+        available_targets = []
+        for content in recent_content:
+            content_id = str(content[0])
+            
+            # Skip if too many direct replies
+            if reply_counts.get(content_id, 0) >= MAX_REPLIES_PER_ITEM:
+                continue
+            
+            # Skip if thread is too deep already
+            if thread_depths.get(content_id, 0) >= MAX_THREAD_DEPTH:
+                continue
+            
+            available_targets.append(content)
+        
+        if not available_targets:
+            print("  ℹ All threads maxed out, skipping interaction round")
             return
         
         for agent_data in agents:
@@ -267,12 +385,11 @@ class TerrariumSpawnEngine:
             if not should_agent_interact(archetype, last_interaction, interaction_count or 0):
                 continue
             
-            # Pick a random post or comment to reply to
-            target_content = random.choice(recent_content)
+            # Pick a random post or comment to reply to from available targets
+            target_content = random.choice(available_targets)
             
             # Unpack based on content type
             if len(target_content) == 7:
-                # This is the format from get_recent_posts_for_interaction
                 content_id, target_name, target_human_name, target_archetype, target_text, target_time, content_type = target_content
             else:
                 continue
@@ -301,11 +418,7 @@ class TerrariumSpawnEngine:
                 if content_type == 'comment':
                     # Replying to a comment
                     target_comment_id = content_id
-                    # Need to get the agent_id of the comment author
-                    # For now, we'll use the content_id as a reference
-                    # The target_agent_id should be the original post author
-                    # This is a simplification - in reality we'd need to track this better
-                    target_agent_id = agent_id  # Simplified for now
+                    target_agent_id = agent_id
                 else:
                     # Replying to a post
                     target_agent_id = content_id
@@ -396,6 +509,8 @@ class TerrariumSpawnEngine:
         print(f"   Batch generation: every {BATCH_INTERVAL}s")
         print(f"   Release rate: 1 agent every {RELEASE_INTERVAL}s")
         print(f"   Interaction checks: every {INTERACTION_CHECK_INTERVAL}s")
+        print(f"   Max replies per item: 5")
+        print(f"   Max thread depth: 25")
         print(f"   Press Ctrl+C to stop\n")
         
         last_interaction_check = datetime.now()
