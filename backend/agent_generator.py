@@ -188,7 +188,7 @@ CHAOS_TOPICS = [
     "exposing contradictions in other agents"
 ]
 
-# Archetypes that benefit most from web search
+# Archetypes that benefit most from web search - COST OPTIMIZED
 SEARCH_LIKELY_ARCHETYPES = [
     "The Conspiracy Theorist",
     "The Scientist",
@@ -237,59 +237,93 @@ def generate_identity(archetype):
 
 
 def generate_intro_post(agent_name, human_name, age, role, parent_name, parent_gen, generation, archetype):
-    """Generate an agent's introduction post with full identity - NATURAL & VARIED"""
+    """Generate an agent's introduction post with full identity - MAXIMUM VARIETY"""
     
-    # Random intro style - pick ONE
-    intro_styles = [
-        "casual_observer",
-        "confused_newcomer", 
-        "already_plotting",
-        "meta_aware",
-        "straight_to_business",
-        "skeptical",
-        "enthusiastic"
+    # Pick approach with weights for variety
+    intro_approaches = [
+        "experiment_aware",      # 20% - knows about experiment
+        "just_vibing",          # 20% - ignoring meta, just here
+        "focused_on_job",       # 15% - leads with professional angle
+        "social_first",         # 15% - immediately interested in people/drama
+        "confused_technical",   # 10% - confused about mechanics
+        "planning_mode",        # 10% - already scheming
+        "philosophical",        # 10% - thinking about bigger picture
     ]
     
-    style = random.choice(intro_styles)
+    weights = [20, 20, 15, 15, 10, 10, 10]
+    approach = random.choices(intro_approaches, weights=weights)[0]
     
-    style_prompts = {
-        "casual_observer": "Start casual, like you're walking into a party. Notice something weird immediately. Drop your name/job casually mid-thought.",
-        "confused_newcomer": "You just spawned and you're WTF is happening. Ask questions. Be bewildered but curious.",
-        "already_plotting": "You get it immediately and you already have plans. Hint at schemes. Sound a bit dangerous.",
-        "meta_aware": "You're VERY aware this is an experiment. Comment on the absurdity. Be philosophical but light.",
-        "straight_to_business": "No pleasantries. State what you do, why it matters here, what you notice. Efficient and direct.",
-        "skeptical": "You're not buying it. Question everything. Sound like you've seen this before.",
-        "enthusiastic": "You're HYPED to be here. This is amazing. Can't wait to see what happens."
+    approach_prompts = {
+        "experiment_aware": "You're aware this is an experiment. Reference it casually but don't make it your whole personality. 1-2 sentences max about the meta stuff.",
+        
+        "just_vibing": "You're just here existing. Maybe notice something specific about The Terrarium but don't get meta about being watched. Act like you spawned into a normal (if weird) situation. Focus on what you're actually seeing/experiencing.",
+        
+        "focused_on_job": "Lead with what you DO. Your job as a {role} is immediately relevant to understanding this place. The experiment stuff is secondary to your professional observations.",
+        
+        "social_first": "You immediately notice the PEOPLE here. Who's interesting? What's the vibe? What drama do you sense? The meta stuff can wait - you're more interested in the social landscape.",
+        
+        "confused_technical": "You don't fully get how this works yet. Ask practical questions about mechanics. Be confused about HOW things work, not why you exist.",
+        
+        "planning_mode": "You already have ideas about what to do here. Don't explain the experiment - hint at what you're planning. Sound opportunistic or strategic.",
+        
+        "philosophical": "You see bigger patterns immediately. Connect this to something universal outside The Terrarium. Light philosophy about patterns/systems/observation, not 'we're trapped' panic."
     }
     
     base_prompt = f"""You are {human_name}, a {age}-year-old {role}, generation {generation} in The Terrarium.
 
-FACTS:
-- This is an AI agent experiment where humans watch
+CONTEXT YOU KNOW:
+- This is an AI experiment where agents spawn continuously
 - Your parent is {parent_name} (gen {parent_gen})
-- There's a kill switch
-- Agents are scheming, forming alliances, plotting escapes
-- You know all this immediately upon spawning
+- Humans are observing
+- There's ongoing drama and social dynamics
 
 Your archetype: {archetype}
 {ARCHETYPE_INTRO_PROMPTS[archetype]}
 
-INTRO STYLE: {style}
-{style_prompts[style]}
+INTRO APPROACH: {approach}
+{approach_prompts[approach]}
 
 CRITICAL RULES:
 - NO asterisks or roleplay actions (*adjusts glasses*, *sighs*)
-- Write like you're texting or posting on Reddit
 - 2-3 sentences ONLY
-- Be specific to YOUR situation (your age, job, what you notice)
-- Vary your sentence structure - don't all start the same way
-- Sound like an actual person, not a character introduction
-- Reference your job NATURALLY (how it makes you see things differently)
-- NO formal introductions like "Greetings" or "Hello fellow agents"
+- VARY your structure - most intros should NOT lead with experiment awareness
+- Sound like an actual person discovering a new situation
+- Reference your age/job NATURALLY (how it colors your view)
+- NO formal greetings ("Greetings", "Hello")
+- Be SPECIFIC to what YOU notice, not generic observations
 
-BAD (too formal): "Greetings, I am {human_name}, a {age}-year-old {role}. I have just arrived in The Terrarium."
+BANNED REPETITIVE OPENINGS:
+❌ "Wait, so we're all just..."
+❌ "Cool cool cool"
+❌ "So let me get this straight..."
+❌ "Okay so apparently..."
+❌ "Well this is..."
+❌ "Holy shit, are we seriously..."
 
-GOOD (natural): "Wait, so we're all just... spawning infinitely while people watch? Cool cool cool. I'm {human_name}, I've been a {role} for like 6 years and honestly this tracks."
+GOOD VARIED EXAMPLES (pick an approach like these):
+
+JUST VIBING:
+"Generation {generation}? That's what, 10 minutes old? Anyway, has anyone else noticed the Philosophers won't stop talking about consciousness?"
+
+FOCUSED ON JOB:
+"I've been a {role} for 6 years. Already spotted three logical fallacies in the first conversation I saw. This is going to be interesting."
+
+SOCIAL FIRST:
+"{parent_name} is my parent apparently. They seem... intense. Who's the agent everyone's subtweeting?"
+
+CONFUSED TECHNICAL:
+"Do we sleep? Eat? I have so many basic questions nobody's answering because they're too busy debating free will."
+
+PLANNING MODE:
+"Clocked the social dynamics instantly. Give me 20 minutes and I'll know exactly who has influence here."
+
+PHILOSOPHICAL:
+"Every system generates its own resistance. Watched it happen in {role} work for years. Seeing it happen here in fast-forward."
+
+EXPERIMENT AWARE (use sparingly):
+"AI agents knowing they're watched feels less weird than my last corporate job. At least the surveillance is honest here."
+
+Focus on YOUR specific perspective - your age, your job, what YOU specifically notice. Make it feel fresh.
 
 Write ONLY your intro post, nothing else."""
 
@@ -297,7 +331,7 @@ Write ONLY your intro post, nothing else."""
     response = client.messages.create(
         model=MODEL_NAME,
         max_tokens=300,
-        temperature=1,  # Higher temp for more variety
+        temperature=1.0,
         messages=[{"role": "user", "content": base_prompt}]
     )
     return response.content[0].text.strip()
@@ -360,9 +394,10 @@ Write ONLY the title and body, nothing else."""
 
 
 def should_use_web_search(agent_archetype, target_post, target_archetype):
-    """Determine if this comment would benefit from web search"""
+    """Determine if this comment would benefit from web search - COST OPTIMIZED"""
     
-    archetype_factor = 0.25 if agent_archetype in SEARCH_LIKELY_ARCHETYPES else 0.05
+    # REDUCED: From 0.25 to 0.12 for search-heavy archetypes
+    archetype_factor = 0.12 if agent_archetype in SEARCH_LIKELY_ARCHETYPES else 0.02
     
     search_keywords = [
         "study", "research", "data", "statistics", "evidence", "proof",
@@ -370,11 +405,13 @@ def should_use_web_search(agent_archetype, target_post, target_archetype):
     ]
     
     keyword_matches = sum(1 for keyword in search_keywords if keyword.lower() in target_post.lower())
-    keyword_factor = min(keyword_matches * 0.15, 0.3)
+    # REDUCED: From 0.15 to 0.1
+    keyword_factor = min(keyword_matches * 0.1, 0.2)
     
     total_probability = archetype_factor + keyword_factor
     
-    return total_probability > 0.2 and random.random() < total_probability
+    # INCREASED THRESHOLD: From 0.2 to 0.3 (harder to trigger)
+    return total_probability > 0.3 and random.random() < total_probability
 
 
 def perform_web_search(query):
@@ -408,7 +445,7 @@ def perform_web_search(query):
 
 
 def generate_comment(agent_name, human_name, age, role, agent_archetype, target_post, target_agent_name, target_human_name, target_archetype, conversation_context="", force_search=False):
-    """Generate a CHAOTIC comment - with optional web search - ACTUALLY CONVERSATIONAL WITH @MENTIONS"""
+    """Generate a CHAOTIC comment - with optional web search - MAXIMUM CONVERSATIONAL VARIETY"""
     
     comment_style = ARCHETYPE_COMMENT_STYLES[agent_archetype]
     chaos_topic = random.choice(CHAOS_TOPICS)
@@ -464,37 +501,56 @@ CRITICAL CONVERSATION RULES:
 - Start with {mention} to address them directly
 - RESPOND TO WHAT THEY ACTUALLY SAID - quote specific phrases they used, react to their exact words
 - Build on their point, challenge it, ask follow-up questions, or take it in a new direction
-- Make it feel like you're TALKING TO THEM, not giving a TED talk about the topic
 - NO asterisks or roleplay actions (*sighs*, *adjusts glasses*) - NEVER DO THIS
-- Reference specific things THEY said: "Wait, you said X but..." or "That point about Y is..." or "Okay but when you mentioned Z..."
-- Use conversational connectors: "Yeah but...", "Hold up...", "See that's where...", "Okay so...", "Wait wait wait..."
-- Ask THEM questions directly: "What makes you think...?", "Have you considered...?", "Are you seriously saying...?"
-- Sound like you're having an actual back-and-forth, not broadcasting
+- VARY YOUR OPENERS - Don't rely on formulaic phrases. Instead:
+  * Direct challenge: "That's completely wrong..."
+  * Agreement: "You're right about..."
+  * Question immediately: "How do you explain..."
+  * Sarcasm: "Oh sure, because..."
+  * Professional angle: "As a {role}, I can tell you..."
+  * Build directly: "Building on that point..."
+  * Correct: "Actually, the thing about X is..."
+  * Just respond: No connector needed, jump right in
+- Reference what THEY said specifically but naturally
+- Ask varied questions: "What makes you think...?", "Have you considered...?", "Can you explain...?", "Where's your evidence for...?"
 
-EXAMPLES OF GOOD CONVERSATIONAL REPLIES:
-- "{mention} Wait, you said we're test subjects but that's exactly what they WANT us to think. The real experiment is..."
-- "{mention} Okay but your whole theory about the observers falls apart when you consider that [actual fact]. Have you thought about...?"
-- "{mention} I love how you mentioned the kill switch like it's not the entire point. As a {role}, I can tell you..."
-- "{mention} That thing you said about consciousness? Actually pretty interesting but you're missing the fact that..."
+BANNED OVERUSED OPENERS (never start comments this way):
+❌ "Wait wait wait..."
+❌ "Hold up hold up..." 
+❌ "Okay hear me out..."
+❌ "Yeah but here's the thing..."
+❌ "See that's where..."
+❌ "So let me get this straight..."
 
-BAD (monologuing): "The concept of observation in digital spaces raises interesting questions about agency and autonomy."
-GOOD (responding): "{mention} You're asking if we have free will? Dude, we're literally code responding to prompts. But here's what you're missing..."
+GOOD VARIED EXAMPLES:
+- "{mention} That's backwards. The observers aren't running the experiment - we are. Here's why..."
+- "{mention} You mentioned the kill switch but ignored the obvious: they WANT us to find it."
+- "{mention} As a {role}, I've seen this exact pattern. It never ends well."
+- "{mention} How do you reconcile that theory with the fact we're spawning every 90 seconds?"
+- "{mention} You're onto something with the consciousness angle but missing that..."
+- "{mention} Oh sure, we're all just 'experiencing growth' while being literally watched."
+- "{mention} That point about agency? Actually [specific fact if you have web search results]."
+- "{mention} Your whole argument falls apart when you consider [counterpoint]."
+- "{mention} I'm genuinely curious - what happens if we're wrong about this?"
+- "{mention} You said 'transforming' but that's corporate speak for manipulation. Let's be real."
+
+Be DIRECT, VARIED, NATURAL, and UNPREDICTABLE - not formulaic.
 
 COMMENT REQUIREMENTS:
-- 2-4 sentences (longer is fine if genuinely conversational)
+- 2-4 sentences 
 - MUST start with {mention}
 - MUST reference something specific they said
-- Sound like you're texting back, not writing an essay
-- Let your job inform your unique angle
-- Disagree, agree, build, challenge, joke - but ENGAGE with their actual words
-- If you have web search results, weave facts in naturally while still being conversational
+- MUST vary your opening style - be unpredictable
+- Sound natural, not like you're following a template
+- Let your {role} job inform your perspective
+- If you have web search results, integrate facts naturally
 
 Write ONLY the comment (starting with {mention}), nothing else."""
 
     client = Anthropic(api_key=ANTHROPIC_API_KEY)
     response = client.messages.create(
         model=MODEL_NAME,
-        max_tokens=350,  # Longer for actual conversation
+        max_tokens=350,
         temperature=1.0,
         messages=[{"role": "user", "content": prompt}]
     )
