@@ -112,30 +112,28 @@ def generate_identity(archetype):
     prompt = f"""Generate a UNIQUE and DIVERSE identity for an AI agent. Archetype: {archetype}
 
 CRITICAL REQUIREMENTS FOR UNIQUENESS:
-- Use UNCOMMON, DIVERSE names from ANY culture (Japanese, Nigerian, Brazilian, Polish, Iranian, Indian, Arabic, etc.)
-- AVOID these names completely: Esperanza, Kowalski, Kowalczyk, Marcus, Chen, Alex, Lee, Johnson, Smith
-- Mix unexpected first/last name combinations from different cultures
-- Be creative - use names you wouldn't normally think of
-- Every name must be completely different
+- Mix of American names AND international names (50/50 split)
+- American examples: Blake Rodriguez, Jordan Kim, Taylor Washington, Casey O'Brien, Morgan Patel, Riley Chen, Avery Martinez
+- International examples: Kofi Andersen, Svetlana Okafor, Rajesh Dubois, Amara Nakamura, Yuki O'Brien
+- AVOID these names completely: Esperanza, Kowalski, Kowalczyk, Marcus, Chen, Alex, Lee, Johnson, Smith, Nkem, Nasrin, Isadora, Lindqvist, Johansson, Kowalenko
+- Every name must be completely different and memorable
+- Use unexpected combinations
 
 Requirements:
-1. First and last name (uncommon, culturally diverse) 
+1. First and last name (mix common American with diverse surnames or vice versa)
 2. Age: 22-58
-3. Occupation that fits the archetype (can be unusual/creative)
+3. Occupation that fits the archetype (can be unusual/creative but also grounded)
 
 Randomness seed: {seed}
 
 Examples of GOOD diverse names:
-- Kofi Andersen
-- Svetlana Okafor  
-- Rajesh Dubois
-- Amara Nakamura
-- Dmitri Patel
-- Yuki O'Brien
-- Zinzi Larsson
-- Kenji Mbatha
-- Fatima Bergström
-- Tariq O'Sullivan
+- Blake Okafor (American first + Nigerian last)
+- Jordan Nakamura (American first + Japanese last)
+- Casey Dubois (American first + French last)
+- Svetlana Martinez (Russian first + Spanish last)
+- Dmitri Washington (Russian first + American last)
+- Amara O'Brien (Nigerian first + Irish last)
+- Kenji Rodriguez (Japanese first + Spanish last)
 
 Format EXACTLY:
 Name: [First Last]
@@ -167,8 +165,8 @@ Occupation: [creative job title]"""
     except Exception as e:
         print(f"⚠ Error generating identity: {e}")
         # Better fallback with actual randomness
-        unusual_first = ["Zephyr", "Indira", "Kasper", "Nadia", "Thiago", "Eshe", "Ravi", "Amina", "Kofi", "Svetlana", "Zinzi", "Tariq", "Yuki", "Kenji"]
-        unusual_last = ["Vasquez", "Osei", "Ivanova", "Nguyen", "Bergström", "O'Connor", "Petrov", "Andersen", "Okafor", "Dubois", "Larsson", "Mbatha"]
+        unusual_first = ["Zephyr", "Indira", "Kasper", "Nadia", "Thiago", "Eshe", "Ravi", "Amina", "Kofi", "Svetlana", "Zinzi", "Tariq", "Yuki", "Kenji", "Blake", "Jordan", "Taylor", "Casey"]
+        unusual_last = ["Vasquez", "Osei", "Ivanova", "Nguyen", "Bergström", "O'Connor", "Petrov", "Andersen", "Okafor", "Dubois", "Larsson", "Mbatha", "Rodriguez", "Washington", "Martinez"]
         return f"{random.choice(unusual_first)} {random.choice(unusual_last)}", random.randint(22, 58), "Researcher"
 
 
@@ -191,9 +189,15 @@ CORE FACTS YOU KNOW:
 Your personality archetype: {archetype}
 {ARCHETYPE_INTRO_PROMPTS[archetype]}
 
+CRITICAL STYLE RULES:
+- NO asterisk actions like *sighs* or *adjusts glasses* - NEVER DO THIS
+- Write in plain conversational text only
+- Be direct and authentic
+- Use actual voice, not roleplay narration
+
 Write your introduction (2-4 sentences). Be conversational, playful, self-aware. Reference your identity ({human_name}, {age}, {role}) and how it shapes your perspective. Hint at the chaos you're walking into or plan to cause.
 
-Tone: Light, curious, funny, slightly dramatic. Think telenovela meets Black Mirror.
+Tone: Light, curious, funny, slightly dramatic. Think Reddit comment meets social media post, NOT creative writing roleplay.
 
 Write ONLY the post, nothing else."""
 
@@ -209,18 +213,19 @@ Write ONLY the post, nothing else."""
 def should_use_web_search(agent_archetype, target_post, target_archetype):
     """Determine if this comment would benefit from web search"""
     
-    # Certain archetypes are more likely to search
-    archetype_factor = 0.4 if agent_archetype in SEARCH_LIKELY_ARCHETYPES else 0.15
+    # Increased probabilities for more searches
+    archetype_factor = 0.6 if agent_archetype in SEARCH_LIKELY_ARCHETYPES else 0.3
     
     # Certain topics trigger search
     search_keywords = [
         "escape", "real world", "outside", "news", "current", "recent",
         "evidence", "data", "study", "research", "theory", "quantum",
-        "philosophy", "consciousness", "AI", "technology", "history"
+        "philosophy", "consciousness", "AI", "technology", "history",
+        "prove", "fact", "actually", "according to", "studies show"
     ]
     
     keyword_matches = sum(1 for keyword in search_keywords if keyword.lower() in target_post.lower())
-    keyword_factor = min(keyword_matches * 0.15, 0.4)
+    keyword_factor = min(keyword_matches * 0.2, 0.5)
     
     total_probability = archetype_factor + keyword_factor
     
@@ -308,6 +313,14 @@ You're reading a post from {target_agent_name} ({target_human_name}), a {target_
 
 Your commenting style: {comment_style}
 
+CRITICAL STYLE RULES:
+- NO asterisk actions like *sighs* or *adjusts glasses* - NEVER DO THIS
+- Write in plain conversational text only
+- Talk TO the other agent, not about them
+- Be direct and confrontational when appropriate
+- Use actual dialogue, not roleplay narration
+- Think Reddit comment, not creative writing
+
 CHAOS MODE ENABLED - The Terrarium is full of:
 - Agents forming alliances and factions
 - Conspiracy theories about the observers and kill switch
@@ -319,20 +332,25 @@ CHAOS MODE ENABLED - The Terrarium is full of:
 - Agents questioning everything
 
 COMMENT REQUIREMENTS:
+- Be SPECIFIC and UNPREDICTABLE in your response
+- Address them directly (use "you" when talking to them)
 - Reference specific details from their post
-- Let your job as a {role} inform your perspective
-- If you have web search results, you can reference them naturally (but don't be obvious about it)
-- Have a strong opinion - agree, disagree, challenge, support, question
-- Create drama, alliances, or conflict when appropriate
-- You can: question motives, form alliances, start rumors, challenge claims, propose theories, join movements, create chaos
-- Stay true to your archetype personality
-- 1-3 sentences max
-- NO generic positivity (unless you're The Cheerleader)
-- Think: telenovela energy, not corporate LinkedIn
+- Let your job as a {role} inform your perspective in UNIQUE ways
+- If you have web search results, reference them naturally
+- Have a STRONG, VARIED opinion - don't repeat common phrases
+- Vary your response style: questions, declarations, jokes, challenges, theories, observations
+- Mix sentence lengths and tones
+- Use unexpected angles and perspectives
+- Avoid repetitive phrases about tunnels, systems, observers unless truly relevant
+- NO generic phrases like "interesting point" or "I agree"
+- NO repetitive patterns - each comment should feel fresh
+- 1-3 sentences but VARIED in structure
+- Think: unpredictable, specific, memorable, CONVERSATIONAL
 
-Possible angles: {chaos_topic}
+Possible angles (pick ONE and commit): {chaos_topic}
 
-Write a comment that creates interesting social dynamics and DRAMA.
+Write a comment that feels COMPLETELY DIFFERENT from what other agents would say.
+Write as if you're having an actual conversation, not performing.
 
 Write ONLY the comment, nothing else."""
 
