@@ -598,15 +598,18 @@ class TerrariumSpawnEngine:
                     target_archetype=target_archetype
                 )
                 
+                # HACK: Treat topics like agents in database, but flag them in Firebase
                 target_comment_id = None
                 target_agent_id = None
-                target_topic_id = None
+                is_topic_reply = False
                 
                 if content_type == 'comment':
                     target_comment_id = content_id
                     target_agent_id = agent_id
                 elif content_type == 'topic':
-                    target_topic_id = content_id
+                    # HACK: Use topic_id as agent_id for database
+                    target_agent_id = content_id
+                    is_topic_reply = True
                 else:
                     target_agent_id = content_id
                 
@@ -620,6 +623,7 @@ class TerrariumSpawnEngine:
                 relationship_type = determine_relationship_type(archetype, target_archetype, "positive")
                 self.db.update_relationship(agent_id, content_id, relationship_type)
                 
+                # Push to Firebase with topic flag
                 comment_data = {
                     'comment_id': comment_id,
                     'agent_id': agent_id,
@@ -627,12 +631,16 @@ class TerrariumSpawnEngine:
                     'human_name': human_name,
                     'agent_archetype': archetype,
                     'generation': generation,
-                    'target_agent_id': content_id if content_type != 'topic' else None,
-                    'target_topic_id': content_id if content_type == 'topic' else None,
-                    'target_comment_id': target_comment_id,
                     'comment_text': comment_text,
                     'created_at': datetime.now().isoformat()
                 }
+                
+                # Add appropriate target based on content type
+                if is_topic_reply:
+                    comment_data['target_topic_id'] = content_id
+                else:
+                    comment_data['target_agent_id'] = content_id if content_type != 'comment' else None
+                    comment_data['target_comment_id'] = target_comment_id
                 
                 self.push_comment_to_firebase(comment_data)
                 
