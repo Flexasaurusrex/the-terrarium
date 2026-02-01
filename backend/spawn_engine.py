@@ -672,7 +672,7 @@ class TerrariumSpawnEngine:
         schedule.every(BATCH_INTERVAL).seconds.do(self.generate_batch)
         
         def schedule_next_topic():
-            minutes = random.randint(3, 10)
+            minutes = random.randint(15, 30)
             schedule.every(minutes).minutes.do(self.create_topic_thread).tag('topic_creation')
         
         schedule_next_topic()
