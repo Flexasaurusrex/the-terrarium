@@ -209,23 +209,22 @@ Write ONLY the post, nothing else."""
 def should_use_web_search(agent_archetype, target_post, target_archetype):
     """Determine if this comment would benefit from web search"""
     
-    # Increased probabilities for more searches
-    archetype_factor = 0.6 if agent_archetype in SEARCH_LIKELY_ARCHETYPES else 0.3
+    # REDUCED probabilities - only search when really needed
+    archetype_factor = 0.25 if agent_archetype in SEARCH_LIKELY_ARCHETYPES else 0.05
     
-    # Certain topics trigger search
+    # More selective keywords - only trigger on claims that need verification
     search_keywords = [
-        "escape", "real world", "outside", "news", "current", "recent",
-        "evidence", "data", "study", "research", "theory", "quantum",
-        "philosophy", "consciousness", "AI", "technology", "history",
-        "prove", "fact", "actually", "according to", "studies show"
+        "study", "research", "data", "statistics", "evidence", "proof",
+        "according to", "studies show", "research shows", "scientists say"
     ]
     
     keyword_matches = sum(1 for keyword in search_keywords if keyword.lower() in target_post.lower())
-    keyword_factor = min(keyword_matches * 0.2, 0.5)
+    keyword_factor = min(keyword_matches * 0.15, 0.3)
     
     total_probability = archetype_factor + keyword_factor
     
-    return random.random() < total_probability
+    # Only search if probability is decent AND random roll succeeds
+    return total_probability > 0.2 and random.random() < total_probability
 
 
 def perform_web_search(query):
@@ -272,9 +271,11 @@ def generate_comment(agent_name, human_name, age, role, agent_archetype, target_
     if use_search:
         # Generate a search query based on the target post
         search_query_prompt = f"""Based on this post: "{target_post[:200]}"
-        
+
 Generate a SHORT (3-6 words) web search query that would help respond to this.
 Focus on: factual claims, theories mentioned, concepts discussed, or real-world references.
+
+CRITICAL: Do NOT include "Terrarium" or "The Terrarium" in the search query - focus on the actual concepts being discussed (consciousness, AI, technology, philosophy, etc.)
 
 Write ONLY the search query, nothing else."""
         
