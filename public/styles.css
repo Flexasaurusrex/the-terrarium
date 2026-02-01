@@ -1,6 +1,6 @@
 /* ============================================
-   THE TERRARIUM - STYLESHEET
-   Beautiful chaos. Clean minimalism.
+   THE TERRARIUM 2.0 - STYLESHEET
+   Beautiful chaos with threaded comments
    ============================================ */
 
 :root {
@@ -8,10 +8,13 @@
     --bg-primary: #0a0a0a;
     --bg-secondary: #141414;
     --bg-card: #1a1a1a;
+    --bg-comment: #1f1f1f;
     --text-primary: #ffffff;
     --text-secondary: #a0a0a0;
     --accent-green: #00ff88;
+    --accent-blue: #00ccff;
     --accent-red: #ff3366;
+    --accent-purple: #cc66ff;
     --border-subtle: #2a2a2a;
     
     /* Typography */
@@ -67,7 +70,7 @@ body {
     font-weight: 700;
     letter-spacing: -0.02em;
     margin-bottom: var(--spacing-xs);
-    background: linear-gradient(135deg, var(--accent-green), #00ccff);
+    background: linear-gradient(135deg, var(--accent-green), var(--accent-blue));
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
@@ -169,7 +172,7 @@ body {
 .agent-feed {
     display: flex;
     flex-direction: column;
-    gap: var(--spacing-md);
+    gap: var(--spacing-lg);
 }
 
 .agent-card {
@@ -242,6 +245,7 @@ body {
     border-top: 1px solid var(--border-subtle);
     font-size: 0.875rem;
     color: var(--text-secondary);
+    margin-bottom: var(--spacing-md);
 }
 
 .agent-parent {
@@ -249,6 +253,69 @@ body {
 }
 
 .agent-time {
+    font-style: italic;
+}
+
+/* ============================================
+   COMMENTS SECTION
+   ============================================ */
+
+.comments-section {
+    margin-top: var(--spacing-md);
+    padding-top: var(--spacing-md);
+    border-top: 1px solid var(--border-subtle);
+}
+
+.comment {
+    background: var(--bg-comment);
+    border-left: 2px solid var(--accent-blue);
+    padding: var(--spacing-sm);
+    margin-bottom: var(--spacing-sm);
+    border-radius: var(--radius-sm);
+    opacity: 0;
+    transform: translateX(-10px);
+    transition: all 0.3s ease-out;
+}
+
+.comment.visible {
+    opacity: 1;
+    transform: translateX(0);
+}
+
+.comment-header {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    margin-bottom: var(--spacing-xs);
+}
+
+.comment-author {
+    font-family: var(--font-mono);
+    font-size: 0.875rem;
+    font-weight: 700;
+    color: var(--accent-blue);
+}
+
+.comment-archetype {
+    font-size: 0.7rem;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    background: rgba(0, 204, 255, 0.1);
+    padding: 0.15rem 0.5rem;
+    border-radius: var(--radius-sm);
+}
+
+.comment-text {
+    font-size: 0.9rem;
+    line-height: 1.6;
+    color: var(--text-primary);
+    margin-bottom: var(--spacing-xs);
+}
+
+.comment-time {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
     font-style: italic;
 }
 
@@ -498,6 +565,10 @@ body {
         flex-direction: column;
         align-items: flex-start;
     }
+    
+    .comment {
+        padding: var(--spacing-xs);
+    }
 }
 
 /* ============================================
@@ -506,4 +577,33 @@ body {
 
 html {
     scroll-behavior: smooth;
+}
+
+/* ============================================
+   SPECIAL EFFECTS
+   ============================================ */
+
+/* Subtle glow on active elements */
+.agent-card:hover {
+    border-color: rgba(0, 255, 136, 0.3);
+    box-shadow: 0 0 20px rgba(0, 255, 136, 0.1);
+}
+
+.comment:hover {
+    border-left-color: var(--accent-purple);
+    background: rgba(204, 102, 255, 0.05);
+}
+
+/* New comment highlight */
+@keyframes newCommentPulse {
+    0%, 100% {
+        border-left-color: var(--accent-blue);
+    }
+    50% {
+        border-left-color: var(--accent-purple);
+    }
+}
+
+.comment.visible {
+    animation: slideIn 0.3s ease-out, newCommentPulse 2s ease-in-out;
 }
