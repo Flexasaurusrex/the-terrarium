@@ -2,6 +2,7 @@ import random
 from anthropic import Anthropic
 from config import *
 from datetime import datetime
+import time
 
 ARCHETYPES = [
     "The Tour Guide",
@@ -92,30 +93,38 @@ CHAOS_TOPICS = [
 
 
 def generate_identity(archetype):
-    """Generate a truly unique identity with Claude"""
+    """Generate a truly unique identity with maximum variety"""
     
-    prompt = f"""Generate a unique identity for an AI agent with the personality archetype: {archetype}
+    # Use timestamp + random for uniqueness
+    seed = int(time.time() * 1000000) % 100000 + random.randint(1, 10000)
+    
+    prompt = f"""Generate a UNIQUE and DIVERSE identity for an AI agent. Archetype: {archetype}
+
+CRITICAL REQUIREMENTS FOR UNIQUENESS:
+- Use UNCOMMON, DIVERSE names from ANY culture (Japanese, Nigerian, Brazilian, Polish, Iranian, etc.)
+- AVOID these overused names: Marcus, Chen, Alex, Lee, Johnson, Smith, Rodriguez, Kim, Patel
+- Mix unexpected first/last name combinations from different cultures
+- Be creative - use names you wouldn't normally think of
 
 Requirements:
-1. A realistic human name (first and last, any cultural background)
-2. An occupation that fits this archetype - be creative and varied
-3. Age between 22-58
+1. First and last name (uncommon, culturally diverse)
+2. Age: 22-58
+3. Occupation that fits the archetype (can be unusual/creative)
 
-For {archetype}, the occupation should reflect their personality:
-- Can be traditional or unusual
-- Should inform how they see the world
-- Mix common jobs with quirky/specific ones
-- Examples: "Escape Room Designer", "Forensic Accountant", "Ice Cream Flavor Developer", "Crisis Negotiator", "Aquarium Behaviorist", "Chaos Theorist", "Memory Palace Architect"
+Randomness seed: {seed}
 
-Format your response EXACTLY like this (nothing else):
+Examples of GOOD diverse names:
+- Kofi Andersen
+- Svetlana Okafor
+- Rajesh Dubois
+- Amara Nakamura
+- Dmitri Patel
+- Yuki O'Brien
+
+Format EXACTLY:
 Name: [First Last]
 Age: [number]
-Occupation: [job title]
-
-Example:
-Name: Sofia Mendez
-Age: 34
-Occupation: Aquarium Behaviorist"""
+Occupation: [creative job title]"""
 
     client = Anthropic(api_key=ANTHROPIC_API_KEY)
     
@@ -123,23 +132,30 @@ Occupation: Aquarium Behaviorist"""
         response = client.messages.create(
             model=MODEL_NAME,
             max_tokens=100,
+            temperature=1.0,  # Maximum randomness
             messages=[{"role": "user", "content": prompt}]
         )
         
         result = response.content[0].text.strip()
         
         # Parse the response
-        lines = result.split('\n')
+        lines = [l.strip() for l in result.split('\n') if l.strip()]
         human_name = lines[0].replace('Name:', '').strip()
         age = int(lines[1].replace('Age:', '').strip())
         role = lines[2].replace('Occupation:', '').strip()
+        
+        print(f"  Generated identity: {human_name}, {age}, {role}")
         
         return human_name, age, role
         
     except Exception as e:
         print(f"⚠ Error generating identity: {e}")
-        # Fallback to simple random
-        return f"Agent {random.randint(1000, 9999)}", random.randint(22, 58), "Researcher"
+        # Fallback with random unusual name
+        unusual_names = [
+            "Zephyr Kowalski", "Indira Vasquez", "Kasper Osei", "Nadia Ivanova",
+            "Thiago Nguyen", "Eshe Bergström", "Ravi O'Connor", "Amina Petrov"
+        ]
+        return random.choice(unusual_names), random.randint(22, 58), "Researcher"
 
 
 def generate_intro_post(agent_name, human_name, age, role, parent_name, parent_gen, generation, archetype):
