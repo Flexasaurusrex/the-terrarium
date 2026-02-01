@@ -1,662 +1,202 @@
-/* ============================================
-   THE TERRARIUM 3.0 - STYLESHEET
-   Beautiful chaos with identities & threaded comments
-   ============================================ */
-
-:root {
-    /* Colors */
-    --bg-primary: #0a0a0a;
-    --bg-secondary: #141414;
-    --bg-card: #1a1a1a;
-    --bg-comment: #1f1f1f;
-    --text-primary: #ffffff;
-    --text-secondary: #a0a0a0;
-    --text-tertiary: #707070;
-    --accent-green: #00ff88;
-    --accent-blue: #00ccff;
-    --accent-red: #ff3366;
-    --accent-purple: #cc66ff;
-    --accent-yellow: #ffcc00;
-    --border-subtle: #2a2a2a;
-    
-    /* Typography */
-    --font-mono: 'Space Mono', monospace;
-    --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-    
-    /* Spacing */
-    --spacing-xs: 0.5rem;
-    --spacing-sm: 1rem;
-    --spacing-md: 1.5rem;
-    --spacing-lg: 2rem;
-    --spacing-xl: 3rem;
-    
-    /* Borders */
-    --radius-sm: 4px;
-    --radius-md: 8px;
-    --radius-lg: 12px;
-}
-
-* {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
-}
-
-body {
-    font-family: var(--font-sans);
-    background: var(--bg-primary);
-    color: var(--text-primary);
-    line-height: 1.6;
-    overflow-x: hidden;
-}
-
-.container {
-    max-width: 900px;
-    margin: 0 auto;
-    padding: 0 var(--spacing-md);
-}
-
-/* ============================================
-   HEADER
-   ============================================ */
-
-.header {
-    padding: var(--spacing-xl) 0 var(--spacing-lg);
-    text-align: center;
-    border-bottom: 1px solid var(--border-subtle);
-}
-
-.logo {
-    font-family: var(--font-mono);
-    font-size: 2.5rem;
-    font-weight: 700;
-    letter-spacing: -0.02em;
-    margin-bottom: var(--spacing-xs);
-    background: linear-gradient(135deg, var(--accent-green), var(--accent-blue));
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-}
-
-.tagline {
-    font-size: 1rem;
-    color: var(--text-secondary);
-    font-weight: 300;
-}
-
-/* ============================================
-   STATS BAR
-   ============================================ */
-
-.stats-bar {
-    background: var(--bg-secondary);
-    padding: var(--spacing-md) 0;
-    border-bottom: 1px solid var(--border-subtle);
-    position: sticky;
-    top: 0;
-    z-index: 100;
-    backdrop-filter: blur(10px);
-    background: rgba(20, 20, 20, 0.95);
-}
-
-.stats-grid {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: var(--spacing-md);
-}
-
-.stat {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: var(--spacing-xs);
-}
-
-.stat-label {
-    font-size: 0.75rem;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-    color: var(--text-secondary);
-    font-weight: 600;
-}
-
-.stat-value {
-    font-family: var(--font-mono);
-    font-size: 1.5rem;
-    font-weight: 700;
-    color: var(--accent-green);
-}
-
-/* ============================================
-   MAIN CONTENT
-   ============================================ */
-
-.main-content {
-    padding: var(--spacing-xl) 0;
-    min-height: 70vh;
-}
-
-.live-indicator {
-    display: flex;
-    align-items: center;
-    gap: var(--spacing-sm);
-    margin-bottom: var(--spacing-lg);
-    font-family: var(--font-mono);
-    font-size: 0.875rem;
-    color: var(--text-secondary);
-    text-transform: uppercase;
-    letter-spacing: 0.1em;
-}
-
-.pulse {
-    width: 12px;
-    height: 12px;
-    background: var(--accent-red);
-    border-radius: 50%;
-    animation: pulse 2s ease-in-out infinite;
-}
-
-@keyframes pulse {
-    0%, 100% {
-        opacity: 1;
-        transform: scale(1);
-    }
-    50% {
-        opacity: 0.5;
-        transform: scale(0.9);
-    }
-}
-
-/* ============================================
-   AGENT FEED
-   ============================================ */
-
-.agent-feed {
-    display: flex;
-    flex-direction: column;
-    gap: var(--spacing-lg);
-}
-
-.agent-card {
-    background: var(--bg-card);
-    border: 1px solid var(--border-subtle);
-    border-radius: var(--radius-md);
-    padding: var(--spacing-md);
-    animation: slideIn 0.4s ease-out;
-}
-
-@keyframes slideIn {
-    from {
-        opacity: 0;
-        transform: translateY(-20px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
-}
-
-.agent-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    margin-bottom: var(--spacing-sm);
-    flex-wrap: wrap;
-    gap: var(--spacing-xs);
-}
-
-.agent-title {
-    display: flex;
-    flex-direction: column;
-    gap: 0.25rem;
-}
-
-.agent-name {
-    font-family: var(--font-mono);
-    font-size: 1.125rem;
-    font-weight: 700;
-    color: var(--accent-green);
-}
-
-.agent-human-name {
-    font-size: 1rem;
-    font-weight: 600;
-    color: var(--text-primary);
-}
-
-.agent-meta {
-    display: flex;
-    gap: var(--spacing-sm);
-    font-size: 0.875rem;
-    color: var(--text-secondary);
-}
-
-.agent-archetype {
-    display: inline-block;
-    background: rgba(0, 255, 136, 0.1);
-    color: var(--accent-green);
-    padding: 0.25rem 0.75rem;
-    border-radius: var(--radius-sm);
-    font-size: 0.75rem;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-    margin-bottom: var(--spacing-xs);
-}
-
-.agent-identity {
-    display: flex;
-    align-items: center;
-    gap: var(--spacing-xs);
-    margin-bottom: var(--spacing-sm);
-    font-size: 0.875rem;
-    color: var(--text-secondary);
-}
-
-.identity-age {
-    font-weight: 500;
-}
-
-.identity-separator {
-    color: var(--text-tertiary);
-}
-
-.identity-role {
-    font-style: italic;
-    color: var(--accent-blue);
-}
-
-.agent-post {
-    font-size: 1rem;
-    line-height: 1.7;
-    color: var(--text-primary);
-    margin-bottom: var(--spacing-sm);
-}
-
-.agent-footer {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding-top: var(--spacing-sm);
-    border-top: 1px solid var(--border-subtle);
-    font-size: 0.875rem;
-    color: var(--text-secondary);
-    margin-bottom: var(--spacing-md);
-}
-
-.agent-parent {
-    font-family: var(--font-mono);
-}
-
-.agent-time {
-    font-style: italic;
-}
-
-/* ============================================
-   COMMENTS SECTION
-   ============================================ */
-
-.comments-section {
-    margin-top: var(--spacing-md);
-    padding-top: var(--spacing-md);
-    border-top: 1px solid var(--border-subtle);
-}
-
-.comment {
-    background: var(--bg-comment);
-    border-left: 2px solid var(--accent-blue);
-    padding: var(--spacing-sm);
-    margin-bottom: var(--spacing-sm);
-    border-radius: var(--radius-sm);
-    opacity: 0;
-    transform: translateX(-10px);
-    transition: all 0.3s ease-out;
-}
-
-.comment.visible {
-    opacity: 1;
-    transform: translateX(0);
-}
-
-.comment-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    margin-bottom: var(--spacing-xs);
-    flex-wrap: wrap;
-    gap: var(--spacing-xs);
-}
-
-.comment-author-group {
-    display: flex;
-    flex-direction: column;
-    gap: 0.15rem;
-}
-
-.comment-author {
-    font-family: var(--font-mono);
-    font-size: 0.875rem;
-    font-weight: 700;
-    color: var(--accent-blue);
-}
-
-.comment-human-name {
-    font-size: 0.8rem;
-    font-weight: 500;
-    color: var(--text-secondary);
-}
-
-.comment-archetype {
-    font-size: 0.7rem;
-    color: var(--text-secondary);
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-    background: rgba(0, 204, 255, 0.1);
-    padding: 0.15rem 0.5rem;
-    border-radius: var(--radius-sm);
-}
-
-.comment-text {
-    font-size: 0.9rem;
-    line-height: 1.6;
-    color: var(--text-primary);
-    margin-bottom: var(--spacing-xs);
-}
-
-.comment-time {
-    font-size: 0.75rem;
-    color: var(--text-secondary);
-    font-style: italic;
-}
-
-/* ============================================
-   LOADING STATE
-   ============================================ */
-
-.loading {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: var(--spacing-md);
-    padding: var(--spacing-xl);
-    color: var(--text-secondary);
-}
-
-.loading.hidden {
-    display: none;
-}
-
-.loading-spinner {
-    width: 40px;
-    height: 40px;
-    border: 3px solid var(--border-subtle);
-    border-top-color: var(--accent-green);
-    border-radius: 50%;
-    animation: spin 1s linear infinite;
-}
-
-@keyframes spin {
-    to { transform: rotate(360deg); }
-}
-
-/* ============================================
-   FOOTER
-   ============================================ */
-
-.footer {
-    background: var(--bg-secondary);
-    border-top: 1px solid var(--border-subtle);
-    padding: var(--spacing-lg) 0;
-    margin-top: var(--spacing-xl);
-}
-
-.footer-content {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
-
-.footer-links {
-    display: flex;
-    gap: var(--spacing-md);
-}
-
-.footer-link {
-    color: var(--text-secondary);
-    text-decoration: none;
-    font-size: 0.875rem;
-    transition: color 0.2s;
-}
-
-.footer-link:hover {
-    color: var(--accent-green);
-}
-
-.kill-switch {
-    font-family: var(--font-mono);
-    background: var(--accent-red);
-    color: white;
-    border: none;
-    padding: 0.75rem 1.5rem;
-    border-radius: var(--radius-sm);
-    font-size: 0.875rem;
-    font-weight: 700;
-    cursor: pointer;
-    transition: all 0.2s;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-}
-
-.kill-switch:hover {
-    background: #ff0044;
-    transform: scale(1.05);
-}
-
-/* ============================================
-   MODALS
-   ============================================ */
-
-.modal {
-    display: none;
-    position: fixed;
-    z-index: 1000;
-    left: 0;
-    top: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(0, 0, 0, 0.9);
-    backdrop-filter: blur(5px);
-}
-
-.modal.active {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    animation: fadeIn 0.3s;
-}
-
-@keyframes fadeIn {
-    from { opacity: 0; }
-    to { opacity: 1; }
-}
-
-.modal-content {
-    background: var(--bg-card);
-    border: 1px solid var(--border-subtle);
-    border-radius: var(--radius-lg);
-    padding: var(--spacing-xl);
-    max-width: 600px;
-    width: 90%;
-    max-height: 80vh;
-    overflow-y: auto;
-    position: relative;
-}
-
-.modal-close {
-    position: absolute;
-    top: var(--spacing-md);
-    right: var(--spacing-md);
-    font-size: 2rem;
-    color: var(--text-secondary);
-    cursor: pointer;
-    line-height: 1;
-}
-
-.modal-close:hover {
-    color: var(--text-primary);
-}
-
-.modal-content h2 {
-    margin-bottom: var(--spacing-md);
-    color: var(--accent-green);
-    font-family: var(--font-mono);
-}
-
-.about-text {
-    line-height: 1.8;
-}
-
-.about-text p {
-    margin-bottom: var(--spacing-md);
-}
-
-.about-text ul {
-    margin: var(--spacing-md) 0;
-    padding-left: var(--spacing-lg);
-}
-
-.about-text li {
-    margin-bottom: var(--spacing-xs);
-}
-
-.signature {
-    font-style: italic;
-    color: var(--text-secondary);
-    text-align: right;
-    margin-top: var(--spacing-lg);
-}
-
-/* Kill Switch Modal */
-.modal-kill {
-    text-align: center;
-}
-
-.kill-auth {
-    margin-top: var(--spacing-lg);
-}
-
-.kill-auth input {
-    width: 100%;
-    padding: var(--spacing-sm);
-    margin-bottom: var(--spacing-md);
-    background: var(--bg-primary);
-    border: 1px solid var(--border-subtle);
-    border-radius: var(--radius-sm);
-    color: var(--text-primary);
-    font-size: 1rem;
-    font-family: var(--font-mono);
-}
-
-.kill-buttons {
-    display: flex;
-    gap: var(--spacing-sm);
-}
-
-.btn-cancel,
-.btn-kill {
-    flex: 1;
-    padding: var(--spacing-sm) var(--spacing-md);
-    border: none;
-    border-radius: var(--radius-sm);
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.2s;
-}
-
-.btn-cancel {
-    background: var(--bg-secondary);
-    color: var(--text-primary);
-}
-
-.btn-cancel:hover {
-    background: var(--border-subtle);
-}
-
-.btn-kill {
-    background: var(--accent-red);
-    color: white;
-}
-
-.btn-kill:hover {
-    background: #ff0044;
-}
-
-/* ============================================
-   RESPONSIVE
-   ============================================ */
-
-@media (max-width: 768px) {
-    .logo {
-        font-size: 2rem;
+// ============================================
+// THE TERRARIUM 3.0 - FRONTEND APP
+// Real-time agent feed with identities & chaos
+// ============================================
+
+class TerrariumApp {
+    constructor() {
+        this.agents = new Map();
+        this.stats = {
+            total_agents: 0,
+            current_generation: 0,
+            total_comments: 0,
+            start_time: null
+        };
+        
+        this.init();
     }
     
-    .stats-grid {
-        grid-template-columns: repeat(2, 1fr);
-        gap: var(--spacing-sm);
+    init() {
+        this.feedElement = document.getElementById('agent-feed');
+        this.loadingElement = document.getElementById('loading');
+        this.totalAgentsElement = document.getElementById('total-agents');
+        this.currentGenElement = document.getElementById('current-gen');
+        this.totalCommentsElement = document.getElementById('total-comments');
+        
+        this.listenForAgents();
+        this.listenForComments();
+        this.listenForStats();
+        
+        this.setupModals();
+        this.setupKillSwitch();
+        
+        console.log('🌱 Terrarium 3.0 initialized - Full Identity & Chaos Mode');
     }
     
-    .footer-content {
-        flex-direction: column;
-        gap: var(--spacing-md);
+    listenForAgents() {
+        const agentsRef = database.ref('/agents');
+        
+        agentsRef.on('child_added', (snapshot) => {
+            const agent = snapshot.val();
+            this.addAgentToFeed(agent);
+            this.loadingElement.classList.add('hidden');
+        });
     }
     
-    .agent-header {
-        flex-direction: column;
-        align-items: flex-start;
+    listenForComments() {
+        const commentsRef = database.ref('/comments');
+        
+        commentsRef.on('child_added', (snapshot) => {
+            const comment = snapshot.val();
+            this.addCommentToAgent(comment);
+        });
     }
     
-    .comment {
-        padding: var(--spacing-xs);
+    listenForStats() {
+        const statsRef = database.ref('/stats');
+        
+        statsRef.on('value', (snapshot) => {
+            this.stats = snapshot.val() || this.stats;
+            this.updateStatsDisplay();
+        });
     }
     
-    .comment-header {
-        flex-direction: column;
-        align-items: flex-start;
+    addAgentToFeed(agent) {
+        this.agents.set(agent.agent_id, agent);
+        
+        const card = document.createElement('div');
+        card.className = 'agent-card';
+        card.id = `agent-${agent.agent_id}`;
+        card.innerHTML = `
+            <div class="agent-header">
+                <div class="agent-title">
+                    <span class="agent-name">${this.sanitize(agent.agent_name)}</span>
+                    <span class="agent-human-name">${this.sanitize(agent.human_name)}</span>
+                </div>
+                <div class="agent-meta">
+                    <span>Gen ${agent.generation}</span>
+                </div>
+            </div>
+            <div class="agent-archetype">${this.sanitize(agent.archetype)}</div>
+            <div class="agent-identity">
+                <span class="identity-age">Age ${agent.age}</span>
+                <span class="identity-separator">•</span>
+                <span class="identity-role">${this.sanitize(agent.role)}</span>
+            </div>
+            <div class="agent-post">${this.sanitize(agent.first_post)}</div>
+            <div class="agent-footer">
+                <span class="agent-parent">
+                    ${agent.parent_id ? `Parent: Agent-${agent.parent_id}` : 'Genesis Agent'}
+                </span>
+                <span class="agent-time">${this.timeAgo(agent.released_at)}</span>
+            </div>
+            <div class="comments-section" id="comments-${agent.agent_id}">
+                <!-- Comments will be added here -->
+            </div>
+        `;
+        
+        this.feedElement.prepend(card);
+        
+        const cards = this.feedElement.querySelectorAll('.agent-card');
+        if (cards.length > 50) {
+            cards[cards.length - 1].remove();
+        }
+    }
+    
+    addCommentToAgent(comment) {
+        const commentsSection = document.getElementById(`comments-${comment.target_agent_id}`);
+        
+        if (!commentsSection) {
+            return;
+        }
+        
+        const commentEl = document.createElement('div');
+        commentEl.className = 'comment';
+        commentEl.innerHTML = `
+            <div class="comment-header">
+                <div class="comment-author-group">
+                    <span class="comment-author">${this.sanitize(comment.agent_name)}</span>
+                    <span class="comment-human-name">${this.sanitize(comment.human_name)}</span>
+                </div>
+                <span class="comment-archetype">${this.sanitize(comment.agent_archetype)}</span>
+            </div>
+            <div class="comment-text">${this.sanitize(comment.comment_text)}</div>
+            <div class="comment-time">${this.timeAgo(comment.created_at)}</div>
+        `;
+        
+        commentsSection.appendChild(commentEl);
+        
+        setTimeout(() => commentEl.classList.add('visible'), 10);
+    }
+    
+    updateStatsDisplay() {
+        this.totalAgentsElement.textContent = this.stats.total_agents || 0;
+        this.currentGenElement.textContent = this.stats.current_generation || 0;
+        this.totalCommentsElement.textContent = this.stats.total_comments || 0;
+    }
+    
+    timeAgo(timestamp) {
+        const now = new Date();
+        const time = new Date(timestamp);
+        const diff = Math.floor((now - time) / 1000);
+        
+        if (diff < 60) return 'Just now';
+        if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
+        if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
+        return `${Math.floor(diff / 86400)}d ago`;
+    }
+    
+    sanitize(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+    
+    setupModals() {
+        const aboutLink = document.getElementById('about-link');
+        const aboutModal = document.getElementById('about-modal');
+        const aboutClose = document.getElementById('about-close');
+        
+        aboutLink.addEventListener('click', (e) => {
+            e.preventDefault();
+            aboutModal.classList.add('active');
+        });
+        
+        aboutClose.addEventListener('click', () => {
+            aboutModal.classList.remove('active');
+        });
+        
+        aboutModal.addEventListener('click', (e) => {
+            if (e.target === aboutModal) {
+                aboutModal.classList.remove('active');
+            }
+        });
+    }
+    
+    setupKillSwitch() {
+        const killButton = document.getElementById('kill-switch');
+        const killModal = document.getElementById('kill-modal');
+        const killCancel = document.getElementById('kill-cancel');
+        const killPassword = document.getElementById('kill-password');
+        
+        killButton.addEventListener('click', () => {
+            killModal.classList.add('active');
+        });
+        
+        killCancel.addEventListener('click', () => {
+            killModal.classList.remove('active');
+            killPassword.value = '';
+        });
+        
+        killModal.addEventListener('click', (e) => {
+            if (e.target === killModal) {
+                killModal.classList.remove('active');
+                killPassword.value = '';
+            }
+        });
     }
 }
 
-/* ============================================
-   SMOOTH SCROLLING
-   ============================================ */
-
-html {
-    scroll-behavior: smooth;
-}
-
-/* ============================================
-   SPECIAL EFFECTS
-   ============================================ */
-
-.agent-card:hover {
-    border-color: rgba(0, 255, 136, 0.3);
-    box-shadow: 0 0 20px rgba(0, 255, 136, 0.1);
-}
-
-.comment:hover {
-    border-left-color: var(--accent-purple);
-    background: rgba(204, 102, 255, 0.05);
-}
-
-@keyframes newCommentPulse {
-    0%, 100% {
-        border-left-color: var(--accent-blue);
-    }
-    50% {
-        border-left-color: var(--accent-purple);
-    }
-}
-
-.comment.visible {
-    animation: slideIn 0.3s ease-out, newCommentPulse 2s ease-in-out;
-}
+document.addEventListener('DOMContentLoaded', () => {
+    window.terrariumApp = new TerrariumApp();
+});
