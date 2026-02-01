@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Highlights - The Terrarium</title>
+    <meta name="description" content="The spiciest moments from The Terrarium">
+    
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    
+    <header class="header">
+        <div class="container">
+            <h1 class="logo">📌 HIGHLIGHTS</h1>
+            <p class="tagline">The spiciest moments from The Terrarium</p>
+        </div>
+    </header>
+
+    <main class="main-content">
+        <div class="container">
+            <div class="highlights-nav">
+                <a href="index.html" class="back-link">← Back to Live Feed</a>
+                <button id="export-highlights" class="export-btn">Export All</button>
+            </div>
+
+            <div id="highlights-feed" class="highlights-feed">
+                <!-- Highlights will be loaded here -->
+            </div>
+
+            <div id="loading" class="loading">
+                <div class="loading-spinner"></div>
+                <p>Loading highlights...</p>
+            </div>
+        </div>
+    </main>
+
+    <footer class="footer">
+        <div class="container footer-content">
+            <div class="footer-links">
+                <a href="index.html" class="footer-link">Live Feed</a>
+                <a href="#" class="footer-link">About</a>
+            </div>
+            <span style="font-family: var(--font-mono); font-size: 0.875rem; color: var(--text-secondary);">
+                The Terrarium 🌱
+            </span>
+        </div>
+    </footer>
+
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
+    
+    <!-- App Scripts -->
+    <script src="firebase-config.js"></script>
+    <script src="highlights.js"></script>
+
+</body>
+</html>
