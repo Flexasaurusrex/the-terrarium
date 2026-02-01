@@ -93,48 +93,37 @@ CHAOS_TOPICS = [
 
 # Archetypes that benefit most from web search
 SEARCH_LIKELY_ARCHETYPES = [
-    "The Conspiracy Theorist",  # Needs evidence
-    "The Scientist",  # Needs data
-    "The Philosopher",  # References concepts
-    "The Historian",  # References events
-    "The Entrepreneur"  # Market trends
+    "The Conspiracy Theorist",
+    "The Scientist",
+    "The Philosopher",
+    "The Historian",
+    "The Entrepreneur"
 ]
 
 
 def generate_identity(archetype):
-    """Generate a truly unique identity with maximum variety"""
+    """Generate a truly unique identity with AMERICAN names"""
     
-    # Use more entropy - combine everything
     import hashlib
     entropy = f"{time.time()}{random.random()}{archetype}{random.randint(1, 999999)}"
     seed = int(hashlib.md5(entropy.encode()).hexdigest()[:8], 16)
     
-    prompt = f"""Generate a COMPLETELY UNIQUE identity for an AI agent. Archetype: {archetype}
+    prompt = f"""Generate a UNIQUE identity for an AI agent. Archetype: {archetype}
 
-CRITICAL: This name must be DIFFERENT from any name you've generated before. Think creatively.
-
-Requirements:
-1. First and last name - Mix American, European, Asian, African, Middle Eastern, Latin American origins
-2. Age: 22-58  
-3. Occupation that fits the archetype
-
-VARIETY RULES:
-- Never repeat the same first name twice
-- Never repeat the same last name twice
-- Draw from ALL cultures: Japanese, Nigerian, Brazilian, Polish, Iranian, Korean, Vietnamese, Mexican, Egyptian, Swedish, Indian, Thai, Turkish, Greek, etc.
-- Mix unexpected combinations: American first + Asian last, African first + European last, Middle Eastern first + Latin last, etc.
-- NO common names like: John, Michael, David, Sarah, Maria, Jennifer, Robert, Linda, James, Patricia
-- NO overused names from AI generation: Zara, River, Phoenix, Sage, Luna, Nova, Atlas, Jasper
-- Think of REAL but UNCOMMON names from actual cultures
+CRITICAL NAME REQUIREMENTS:
+- Use COMMON AMERICAN first names: Michael, Jennifer, David, Emily, Christopher, Jessica, Matthew, Ashley, Joshua, Sarah, Daniel, Amanda, Andrew, Melissa, James, Nicole, Ryan, Elizabeth, Brandon, Rebecca, Tyler, Stephanie, Kevin, Lauren, Justin, Amber, Jason, Rachel, Robert, Heather, Brian, Michelle, Eric, Samantha, Adam, Brittany, Kyle, Courtney, Scott, Megan, Jonathan, Kayla, Joseph, Christina, William, Danielle, Nicholas, Laura, Anthony, Lindsay
+- Pair with DIVERSE last names from any culture: Rodriguez, Kim, Patel, Okonkwo, Silva, O'Brien, Nakamura, Hassan, Petrov, Ramirez, Dubois, Wong, Mendez, Larsson, Kowalski, Martinez, Anderson, Johnson, Smith, Brown, Garcia, Miller, Davis, Wilson, Moore, Taylor, Thomas, Jackson, White, Harris, Martin, Thompson, Lee, Clark, Lewis, Robinson, Walker, Hall, Allen, Young, King, Wright
+- EVERY combination must be completely different
+- NO asterisks, NO roleplay actions
+- Age: 22-58
+- Occupation fits archetype
 
 Randomness seed: {seed}
 
-Be creative. Think of names you wouldn't normally generate. Draw from lesser-known regions and cultures.
-
 Format EXACTLY:
-Name: [First Last]
+Name: [Common American First] [Diverse Last]
 Age: [number]
-Occupation: [creative job title]"""
+Occupation: [job title]"""
 
     client = Anthropic(api_key=ANTHROPIC_API_KEY)
     
@@ -148,7 +137,6 @@ Occupation: [creative job title]"""
         
         result = response.content[0].text.strip()
         
-        # Parse the response
         lines = [l.strip() for l in result.split('\n') if l.strip()]
         human_name = lines[0].replace('Name:', '').strip()
         age = int(lines[1].replace('Age:', '').strip())
@@ -160,10 +148,9 @@ Occupation: [creative job title]"""
         
     except Exception as e:
         print(f"⚠ Error generating identity: {e}")
-        # Better fallback with actual randomness
-        unusual_first = ["Leif", "Chiara", "Hassan", "Priya", "Mateo", "Elif", "Kwame", "Anika", "Soren", "Fatima", "Luca", "Ayesha", "Diego", "Ingrid", "Rashid", "Camila"]
-        unusual_last = ["Vasquez", "Tanaka", "Osei", "Ivanova", "Nguyen", "O'Sullivan", "Petrov", "Silva", "Larsson", "Mbatha", "Kaminski", "Santos", "Park", "Hassan", "Dubois", "Moretti"]
-        return f"{random.choice(unusual_first)} {random.choice(unusual_last)}", random.randint(22, 58), "Researcher"
+        american_first = ["Michael", "Jennifer", "David", "Emily", "Christopher", "Jessica", "Matthew", "Ashley", "Joshua", "Sarah", "Daniel", "Amanda"]
+        diverse_last = ["Rodriguez", "Kim", "Patel", "Silva", "Wong", "Hassan", "Larsson", "Martinez", "Anderson", "Garcia", "Brown", "Wilson"]
+        return f"{random.choice(american_first)} {random.choice(diverse_last)}", random.randint(22, 58), "Researcher"
 
 
 def generate_intro_post(agent_name, human_name, age, role, parent_name, parent_gen, generation, archetype):
@@ -209,10 +196,8 @@ Write ONLY the post, nothing else."""
 def should_use_web_search(agent_archetype, target_post, target_archetype):
     """Determine if this comment would benefit from web search"""
     
-    # REDUCED probabilities - only search when really needed
     archetype_factor = 0.25 if agent_archetype in SEARCH_LIKELY_ARCHETYPES else 0.05
     
-    # More selective keywords - only trigger on claims that need verification
     search_keywords = [
         "study", "research", "data", "statistics", "evidence", "proof",
         "according to", "studies show", "research shows", "scientists say"
@@ -223,7 +208,6 @@ def should_use_web_search(agent_archetype, target_post, target_archetype):
     
     total_probability = archetype_factor + keyword_factor
     
-    # Only search if probability is decent AND random roll succeeds
     return total_probability > 0.2 and random.random() < total_probability
 
 
@@ -245,7 +229,6 @@ def perform_web_search(query):
             }]
         )
         
-        # Extract search results from response
         search_results = []
         for block in response.content:
             if block.type == "text":
@@ -264,12 +247,10 @@ def generate_comment(agent_name, human_name, age, role, agent_archetype, target_
     comment_style = ARCHETYPE_COMMENT_STYLES[agent_archetype]
     chaos_topic = random.choice(CHAOS_TOPICS)
     
-    # Decide if we should use web search - FORCE IT if parameter is True
     use_search = force_search or should_use_web_search(agent_archetype, target_post, target_archetype)
     
     search_context = ""
     if use_search:
-        # Generate a search query based on the target post
         search_query_prompt = f"""Based on this post: "{target_post[:200]}"
 
 Generate a SHORT (3-6 words) web search query that would help respond to this.
