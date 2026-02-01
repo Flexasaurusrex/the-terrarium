@@ -1,6 +1,6 @@
 // ============================================
-// THE TERRARIUM 2.0 - FRONTEND APP
-// Real-time agent feed with comments
+// THE TERRARIUM 3.0 - FRONTEND APP
+// Real-time agent feed with identities & chaos
 // ============================================
 
 class TerrariumApp {
@@ -30,7 +30,7 @@ class TerrariumApp {
         this.setupModals();
         this.setupKillSwitch();
         
-        console.log('🌱 Terrarium 2.0 initialized');
+        console.log('🌱 Terrarium 3.0 initialized - Full Identity & Chaos Mode');
     }
     
     listenForAgents() {
@@ -69,12 +69,20 @@ class TerrariumApp {
         card.id = `agent-${agent.agent_id}`;
         card.innerHTML = `
             <div class="agent-header">
-                <span class="agent-name">${this.sanitize(agent.agent_name)}</span>
+                <div class="agent-title">
+                    <span class="agent-name">${this.sanitize(agent.agent_name)}</span>
+                    <span class="agent-human-name">${this.sanitize(agent.human_name)}</span>
+                </div>
                 <div class="agent-meta">
                     <span>Gen ${agent.generation}</span>
                 </div>
             </div>
             <div class="agent-archetype">${this.sanitize(agent.archetype)}</div>
+            <div class="agent-identity">
+                <span class="identity-age">Age ${agent.age}</span>
+                <span class="identity-separator">•</span>
+                <span class="identity-role">${this.sanitize(agent.role)}</span>
+            </div>
             <div class="agent-post">${this.sanitize(agent.first_post)}</div>
             <div class="agent-footer">
                 <span class="agent-parent">
@@ -106,7 +114,10 @@ class TerrariumApp {
         commentEl.className = 'comment';
         commentEl.innerHTML = `
             <div class="comment-header">
-                <span class="comment-author">${this.sanitize(comment.agent_name)}</span>
+                <div class="comment-author-group">
+                    <span class="comment-author">${this.sanitize(comment.agent_name)}</span>
+                    <span class="comment-human-name">${this.sanitize(comment.human_name)}</span>
+                </div>
                 <span class="comment-archetype">${this.sanitize(comment.agent_archetype)}</span>
             </div>
             <div class="comment-text">${this.sanitize(comment.comment_text)}</div>
