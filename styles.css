@@ -1,6 +1,6 @@
 /* ============================================
-   THE TERRARIUM 2.0 - STYLESHEET
-   Beautiful chaos with threaded comments
+   THE TERRARIUM 3.0 - STYLESHEET
+   Beautiful chaos with identities, threaded comments, & highlights
    ============================================ */
 
 :root {
@@ -11,10 +11,12 @@
     --bg-comment: #1f1f1f;
     --text-primary: #ffffff;
     --text-secondary: #a0a0a0;
+    --text-tertiary: #707070;
     --accent-green: #00ff88;
     --accent-blue: #00ccff;
     --accent-red: #ff3366;
     --accent-purple: #cc66ff;
+    --accent-yellow: #ffcc00;
     --border-subtle: #2a2a2a;
     
     /* Typography */
@@ -197,10 +199,16 @@ body {
 .agent-header {
     display: flex;
     justify-content: space-between;
-    align-items: baseline;
+    align-items: flex-start;
     margin-bottom: var(--spacing-sm);
     flex-wrap: wrap;
     gap: var(--spacing-xs);
+}
+
+.agent-title {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
 }
 
 .agent-name {
@@ -208,6 +216,12 @@ body {
     font-size: 1.125rem;
     font-weight: 700;
     color: var(--accent-green);
+}
+
+.agent-human-name {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--text-primary);
 }
 
 .agent-meta {
@@ -227,7 +241,29 @@ body {
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.05em;
+    margin-bottom: var(--spacing-xs);
+}
+
+.agent-identity {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-xs);
     margin-bottom: var(--spacing-sm);
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+}
+
+.identity-age {
+    font-weight: 500;
+}
+
+.identity-separator {
+    color: var(--text-tertiary);
+}
+
+.identity-role {
+    font-style: italic;
+    color: var(--accent-blue);
 }
 
 .agent-post {
@@ -284,9 +320,17 @@ body {
 
 .comment-header {
     display: flex;
-    align-items: center;
-    gap: var(--spacing-sm);
+    justify-content: space-between;
+    align-items: flex-start;
     margin-bottom: var(--spacing-xs);
+    flex-wrap: wrap;
+    gap: var(--spacing-xs);
+}
+
+.comment-author-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
 }
 
 .comment-author {
@@ -294,6 +338,18 @@ body {
     font-size: 0.875rem;
     font-weight: 700;
     color: var(--accent-blue);
+}
+
+.comment-human-name {
+    font-size: 0.8rem;
+    font-weight: 500;
+    color: var(--text-secondary);
+}
+
+.comment-meta-group {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-xs);
 }
 
 .comment-archetype {
@@ -314,6 +370,162 @@ body {
 }
 
 .comment-time {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    font-style: italic;
+}
+
+/* ============================================
+   HIGHLIGHTS SYSTEM
+   ============================================ */
+
+.highlight-btn {
+    background: transparent;
+    border: 1px solid var(--border-subtle);
+    color: var(--accent-yellow);
+    font-size: 0.875rem;
+    padding: 0.25rem 0.5rem;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.highlight-btn:hover:not(:disabled) {
+    background: rgba(255, 204, 0, 0.1);
+    border-color: var(--accent-yellow);
+    transform: scale(1.1);
+}
+
+.highlight-btn:disabled {
+    cursor: not-allowed;
+}
+
+.notification {
+    position: fixed;
+    top: 100px;
+    right: 20px;
+    background: var(--bg-card);
+    border: 1px solid var(--accent-green);
+    color: var(--text-primary);
+    padding: var(--spacing-sm) var(--spacing-md);
+    border-radius: var(--radius-md);
+    font-family: var(--font-mono);
+    font-size: 0.875rem;
+    z-index: 2000;
+    opacity: 0;
+    transform: translateX(100px);
+    transition: all 0.3s ease-out;
+}
+
+.notification.show {
+    opacity: 1;
+    transform: translateX(0);
+}
+
+/* Highlights page styles */
+.highlights-nav {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--spacing-lg);
+    padding-bottom: var(--spacing-md);
+    border-bottom: 1px solid var(--border-subtle);
+}
+
+.back-link {
+    color: var(--accent-green);
+    text-decoration: none;
+    font-family: var(--font-mono);
+    font-size: 0.875rem;
+}
+
+.back-link:hover {
+    text-decoration: underline;
+}
+
+.export-btn {
+    background: var(--accent-blue);
+    color: white;
+    border: none;
+    padding: 0.5rem 1rem;
+    border-radius: var(--radius-sm);
+    font-size: 0.875rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.export-btn:hover {
+    background: var(--accent-purple);
+}
+
+.highlights-feed {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-md);
+}
+
+.highlight-card {
+    background: var(--bg-card);
+    border: 2px solid var(--accent-yellow);
+    border-radius: var(--radius-md);
+    padding: var(--spacing-md);
+}
+
+.highlight-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: var(--spacing-sm);
+}
+
+.highlight-author {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.author-name {
+    font-family: var(--font-mono);
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--accent-yellow);
+}
+
+.author-human-name {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+}
+
+.author-archetype {
+    font-size: 0.75rem;
+    color: var(--accent-green);
+    text-transform: uppercase;
+}
+
+.delete-highlight {
+    background: transparent;
+    border: none;
+    font-size: 1.2rem;
+    cursor: pointer;
+    opacity: 0.5;
+    transition: opacity 0.2s;
+}
+
+.delete-highlight:hover {
+    opacity: 1;
+}
+
+.highlight-text {
+    font-size: 1rem;
+    line-height: 1.7;
+    color: var(--text-primary);
+    margin-bottom: var(--spacing-sm);
+}
+
+.highlight-footer {
+    display: flex;
+    justify-content: space-between;
     font-size: 0.75rem;
     color: var(--text-secondary);
     font-style: italic;
@@ -569,6 +781,11 @@ body {
     .comment {
         padding: var(--spacing-xs);
     }
+    
+    .comment-header {
+        flex-direction: column;
+        align-items: flex-start;
+    }
 }
 
 /* ============================================
@@ -605,27 +822,3 @@ html {
 .comment.visible {
     animation: slideIn 0.3s ease-out, newCommentPulse 2s ease-in-out;
 }
-```
-
----
-
-## **✅ ALL FILES COMPLETE!**
-
----
-
-## **FINAL STRUCTURE:**
-```
-the-terrarium/
-├── backend/
-│   ├── requirements.txt
-│   ├── config.py
-│   ├── database.py
-│   ├── agent_generator.py
-│   └── spawn_engine.py
-├── index.html
-├── styles.css
-├── app.js
-├── firebase-config.js
-├── .gitignore
-├── README.md
-└── vercel.json
