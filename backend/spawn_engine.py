@@ -425,6 +425,7 @@ class TerrariumSpawnEngine:
                         topic_data.get('created_at'),
                         'topic'
                     ))
+                print(f"  ✓ Added {len(all_topics)} topics to comment targets")
         except Exception as e:
             print(f"  ⚠ Error getting topics: {e}")
         
@@ -550,7 +551,14 @@ class TerrariumSpawnEngine:
             if not should_agent_interact(archetype, last_interaction, interaction_count or 0):
                 continue
             
-            target_content = random.choice(available_targets)
+            # PRIORITIZE TOPICS: 50% chance to pick a topic if available
+            topics_only = [c for c in available_targets if len(c) == 7 and c[6] == 'topic']
+            
+            if topics_only and random.random() < 0.5:
+                target_content = random.choice(topics_only)
+                print(f"  → {agent_name} targeting TOPIC")
+            else:
+                target_content = random.choice(available_targets)
             
             if len(target_content) == 7:
                 content_id, target_name, target_human_name, target_archetype, target_text, target_time, content_type = target_content
@@ -671,11 +679,8 @@ class TerrariumSpawnEngine:
         
         schedule.every(BATCH_INTERVAL).seconds.do(self.generate_batch)
         
-        def schedule_next_topic():
-            minutes = random.randint(15, 30)
-            schedule.every(minutes).minutes.do(self.create_topic_thread).tag('topic_creation')
-        
-        schedule_next_topic()
+        # FIXED INTERVAL TOPICS - Every 20 minutes
+        schedule.every(20).minutes.do(self.create_topic_thread)
         
         self.generate_batch()
         
@@ -683,7 +688,8 @@ class TerrariumSpawnEngine:
         print(f"   Batch generation: every {BATCH_INTERVAL}s")
         print(f"   Release rate: 1 agent every {RELEASE_INTERVAL}s")
         print(f"   Interaction checks: every {INTERACTION_CHECK_INTERVAL}s")
-        print(f"   Topic threads: every 3-10 minutes (random)")
+        print(f"   Topic threads: every 20 minutes (fixed)")
+        print(f"   Topics prioritized: 50% chance agents pick topics")
         print(f"   Max replies per item: 5")
         print(f"   Max thread depth: 25")
         print(f"   Active generations: Current + Previous only")
@@ -700,9 +706,6 @@ class TerrariumSpawnEngine:
                 if (datetime.now() - last_interaction_check).total_seconds() >= INTERACTION_CHECK_INTERVAL:
                     self.process_interactions()
                     last_interaction_check = datetime.now()
-                
-                if not schedule.get_jobs('topic_creation'):
-                    schedule_next_topic()
                 
                 time.sleep(5)
                 
