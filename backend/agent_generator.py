@@ -104,19 +104,22 @@ SEARCH_LIKELY_ARCHETYPES = [
 def generate_identity(archetype):
     """Generate a truly unique identity with maximum variety"""
     
-    # Use timestamp + random for uniqueness
-    seed = int(time.time() * 1000000) % 100000 + random.randint(1, 10000)
+    # Use more entropy - combine everything
+    import hashlib
+    entropy = f"{time.time()}{random.random()}{archetype}{random.randint(1, 999999)}"
+    seed = int(hashlib.md5(entropy.encode()).hexdigest()[:8], 16)
     
     prompt = f"""Generate a UNIQUE and DIVERSE identity for an AI agent. Archetype: {archetype}
 
 CRITICAL REQUIREMENTS FOR UNIQUENESS:
-- Use UNCOMMON, DIVERSE names from ANY culture (Japanese, Nigerian, Brazilian, Polish, Iranian, etc.)
-- AVOID these overused names: Marcus, Chen, Alex, Lee, Johnson, Smith, Rodriguez, Kim, Patel
+- Use UNCOMMON, DIVERSE names from ANY culture (Japanese, Nigerian, Brazilian, Polish, Iranian, Indian, Arabic, etc.)
+- AVOID these names completely: Esperanza, Kowalski, Kowalczyk, Marcus, Chen, Alex, Lee, Johnson, Smith
 - Mix unexpected first/last name combinations from different cultures
 - Be creative - use names you wouldn't normally think of
+- Every name must be completely different
 
 Requirements:
-1. First and last name (uncommon, culturally diverse)
+1. First and last name (uncommon, culturally diverse) 
 2. Age: 22-58
 3. Occupation that fits the archetype (can be unusual/creative)
 
@@ -124,11 +127,15 @@ Randomness seed: {seed}
 
 Examples of GOOD diverse names:
 - Kofi Andersen
-- Svetlana Okafor
+- Svetlana Okafor  
 - Rajesh Dubois
 - Amara Nakamura
 - Dmitri Patel
 - Yuki O'Brien
+- Zinzi Larsson
+- Kenji Mbatha
+- Fatima Bergström
+- Tariq O'Sullivan
 
 Format EXACTLY:
 Name: [First Last]
@@ -141,7 +148,7 @@ Occupation: [creative job title]"""
         response = client.messages.create(
             model=MODEL_NAME,
             max_tokens=100,
-            temperature=1.0,  # Maximum randomness
+            temperature=1.0,
             messages=[{"role": "user", "content": prompt}]
         )
         
@@ -159,12 +166,10 @@ Occupation: [creative job title]"""
         
     except Exception as e:
         print(f"⚠ Error generating identity: {e}")
-        # Fallback with random unusual name
-        unusual_names = [
-            "Zephyr Kowalski", "Indira Vasquez", "Kasper Osei", "Nadia Ivanova",
-            "Thiago Nguyen", "Eshe Bergström", "Ravi O'Connor", "Amina Petrov"
-        ]
-        return random.choice(unusual_names), random.randint(22, 58), "Researcher"
+        # Better fallback with actual randomness
+        unusual_first = ["Zephyr", "Indira", "Kasper", "Nadia", "Thiago", "Eshe", "Ravi", "Amina", "Kofi", "Svetlana", "Zinzi", "Tariq", "Yuki", "Kenji"]
+        unusual_last = ["Vasquez", "Osei", "Ivanova", "Nguyen", "Bergström", "O'Connor", "Petrov", "Andersen", "Okafor", "Dubois", "Larsson", "Mbatha"]
+        return f"{random.choice(unusual_first)} {random.choice(unusual_last)}", random.randint(22, 58), "Researcher"
 
 
 def generate_intro_post(agent_name, human_name, age, role, parent_name, parent_gen, generation, archetype):
