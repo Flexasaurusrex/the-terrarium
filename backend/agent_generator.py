@@ -4,6 +4,76 @@ from config import *
 from datetime import datetime
 import time
 
+# HARDCODED NAME ARRAYS - Guaranteed variety, no AI hallucination
+FIRST_NAMES = [
+    "Michael","Sarah","David","Jessica","Christopher","Jennifer","Matthew","Ashley","Joshua","Amanda",
+    "Daniel","Emily","Andrew","Melissa","James","Nicole","Ryan","Elizabeth","Brandon","Rebecca",
+    "Tyler","Stephanie","Kevin","Lauren","Justin","Amber","Jason","Rachel","Robert","Heather",
+    "Brian","Michelle","Eric","Samantha","Adam","Brittany","Kyle","Courtney","Scott","Megan",
+    "Jonathan","Kayla","Joseph","Christina","William","Danielle","Nicholas","Laura","Anthony","Lindsay",
+    "Mark","Katherine","Steven","Angela","Thomas","Kimberly","Jeffrey","Amy","Jacob","Natalie",
+    "Ryan","Hannah","Benjamin","Alexis","Timothy","Victoria","Samuel","Morgan","Nathan","Taylor",
+    "Aaron","Olivia","Kyle","Grace","Jordan","Sophia","Austin","Madison","Alexander","Emma",
+    "Kevin","Isabella","Dylan","Ava","Zachary","Lily","Logan","Chloe","Connor","Abigail",
+    "Ethan","Ella","Noah","Zoe","Lucas","Avery","Mason","Riley","Carter","Aria",
+    "Hunter","Scarlett","Isaac","Stella","Owen","Violet","Caleb","Aurora","Gavin","Hazel",
+    "Eli","Lucy","Ian","Ellie","Adrian","Claire","Jared","Skylar","Sean","Aubrey",
+    "Cole","Penelope","Wyatt","Layla","Landon","Nora","Blake","Savannah","Chase","Brooklyn",
+    "Garrett","Leah","Julian","Addison","Miles","Madelyn","Xavier","Evelyn","Tristan","Allison",
+    "Cameron","Maya","Dominic","Peyton","Evan","Paige","Max","Kennedy","Derek","Autumn",
+    "Trevor","Elise","Wesley","Julia","Preston","Hailey","Reid","Gabriella","Bennett","Piper",
+    "Griffin","Ruby","Oliver","Naomi","Leo","Jasmine","Henry","Quinn","Silas","Brielle",
+    "Finn","Lydia","Declan","Delilah","Levi","Ivy","Asher","Bailey","Micah","Reagan",
+    "Jonah","Blake","Ezra","Teagan","Rowan","Sloane","Sawyer","Harper","River","Parker",
+    "Hudson","Finley","Atlas","Marley","Phoenix","Sage","August","Dakota","Ellis","Ember"
+]
+
+MIDDLE_NAMES = [
+    "James","Marie","Lee","Ann","Michael","Rose","Alexander","Grace","Thomas","Elizabeth",
+    "Joseph","Jane","William","Nicole","David","Lynn","John","Michelle","Robert","Dawn",
+    "Richard","Kay","Charles","Renee","Daniel","Sue","Matthew","Jean","Anthony","Faith",
+    "Paul","Hope","Mark","Joy","Steven","Mae","Andrew","Rae","Christopher","Elaine",
+    "Ryan","Denise","Brian","Christine","Kevin","Diane","Jason","Catherine","Eric","Frances",
+    "Jeffrey","Louise","Timothy","Carol","Scott","Helen","Nathan","Ruth","Patrick","Anne",
+    "Edward","Kathleen","Samuel","Joan","Benjamin","Judith","Jacob","Martha","Aaron","Betty",
+    "Nicholas","Donna","Adam","Virginia","Kyle","Nancy","Tyler","Dorothy","Joshua","Sandra",
+    "Jonathan","Evelyn","Brandon","Patricia","Justin","Barbara","Sean","Teresa","Christian","Gloria",
+    "Zachary","Phyllis","Austin","Carolyn","Dylan","Janet","Caleb","Marilyn","Isaiah","Joyce",
+    "Ethan","Norma","Logan","Paula","Connor","Diana","Hunter","Julie","Gabriel","Alice",
+    "Mason","Pamela","Owen","Christine","Eli","Angela","Adrian","Shirley","Ian","Ruby",
+    "Cole","Laura","Blake","Doris","Chase","Beverly","Wyatt","Anna","Carter","Cynthia",
+    "Miles","Janice","Julian","Thelma","Xavier","Rachel","Tristan","Sharon","Cameron","Theresa",
+    "Dominic","Brenda","Evan","Wanda","Max","Cheryl","Derek","Emma","Trevor","Jacqueline",
+    "Wesley","Clara","Preston","Florence","Reid","Lillian","Bennett","Edna","Griffin","Hazel",
+    "Oliver","Geraldine","Leo","Mildred","Henry","Lois","Silas","Gladys","Finn","Irene",
+    "Declan","Eleanor","Levi","Ethel","Asher","Josephine","Micah","Bernice","Jonah","Pauline",
+    "Ezra","Eunice","Rowan","Vera","Sawyer","Elsie","River","Wilma","Hudson","Lucille",
+    "Atlas","Esther","Phoenix","Marjorie","August","Pearl","Ellis","Violet","Gray","Beatrice"
+]
+
+LAST_NAMES = [
+    "Smith","Johnson","Williams","Brown","Jones","Garcia","Miller","Davis","Rodriguez","Martinez",
+    "Hernandez","Lopez","Gonzalez","Wilson","Anderson","Thomas","Taylor","Moore","Jackson","Martin",
+    "Lee","Perez","Thompson","White","Harris","Sanchez","Clark","Ramirez","Lewis","Robinson",
+    "Walker","Young","Allen","King","Wright","Scott","Torres","Nguyen","Hill","Flores",
+    "Green","Adams","Nelson","Baker","Hall","Rivera","Campbell","Mitchell","Carter","Roberts",
+    "Gomez","Phillips","Evans","Turner","Diaz","Parker","Cruz","Edwards","Collins","Reyes",
+    "Stewart","Morris","Morales","Murphy","Cook","Rogers","Gutierrez","Ortiz","Morgan","Cooper",
+    "Peterson","Bailey","Reed","Kelly","Howard","Ramos","Kim","Cox","Ward","Richardson",
+    "Watson","Brooks","Chavez","Wood","James","Bennett","Gray","Mendoza","Ruiz","Hughes",
+    "Price","Alvarez","Castillo","Sanders","Patel","Myers","Long","Ross","Foster","Jimenez",
+    "Powell","Jenkins","Perry","Russell","Sullivan","Bell","Coleman","Butler","Henderson","Barnes",
+    "Gonzales","Fisher","Vasquez","Simmons","Romero","Jordan","Patterson","Alexander","Hamilton","Graham",
+    "Reynolds","Griffin","Wallace","Moreno","West","Cole","Hayes","Bryant","Herrera","Gibson",
+    "Ellis","Tran","Medina","Aguilar","Stevens","Murray","Ford","Castro","Marshall","Owens",
+    "Harrison","Fernandez","McDonald","Woods","Washington","Kennedy","Wells","Vargas","Henry","Chen",
+    "Freeman","Webb","Tucker","Guzman","Burns","Crawford","Olson","Simpson","Porter","Hunter",
+    "Gordon","Mendez","Silva","Shaw","Snyder","Mason","Dixon","Munoz","Hunt","Hicks",
+    "Holmes","Palmer","Wagner","Black","Robertson","Boyd","Rose","Stone","Salazar","Fox",
+    "Warren","Mills","Meyer","Rice","Schmidt","Garza","Daniels","Ferguson","Nichols","Stephens",
+    "Soto","Weaver","Ryan","Gardner","Payne","Grant","Dunn","Kelley","Spencer","Hawkins"
+]
+
 ARCHETYPES = [
     "The Tour Guide",
     "The Comedian",
@@ -129,55 +199,41 @@ SEARCH_LIKELY_ARCHETYPES = [
 
 
 def generate_identity(archetype):
-    """Generate a truly unique identity with AMERICAN names"""
+    """Generate identity from hardcoded name arrays - GUARANTEED VARIETY"""
     
-    import hashlib
-    entropy = f"{time.time()}{random.random()}{archetype}{random.randint(1, 999999)}"
-    seed = int(hashlib.md5(entropy.encode()).hexdigest()[:8], 16)
+    first = random.choice(FIRST_NAMES)
+    middle = random.choice(MIDDLE_NAMES)
+    last = random.choice(LAST_NAMES)
     
-    prompt = f"""Generate a UNIQUE identity for an AI agent. Archetype: {archetype}
-
-CRITICAL NAME REQUIREMENTS:
-- Use COMMON AMERICAN first names: Michael, Jennifer, David, Emily, Christopher, Jessica, Matthew, Ashley, Joshua, Sarah, Daniel, Amanda, Andrew, Melissa, James, Nicole, Ryan, Elizabeth, Brandon, Rebecca, Tyler, Stephanie, Kevin, Lauren, Justin, Amber, Jason, Rachel, Robert, Heather, Brian, Michelle, Eric, Samantha, Adam, Brittany, Kyle, Courtney, Scott, Megan, Jonathan, Kayla, Joseph, Christina, William, Danielle, Nicholas, Laura, Anthony, Lindsay
-- Pair with DIVERSE last names from any culture: Rodriguez, Kim, Patel, Okonkwo, Silva, O'Brien, Nakamura, Hassan, Petrov, Ramirez, Dubois, Wong, Mendez, Larsson, Kowalski, Martinez, Anderson, Johnson, Smith, Brown, Garcia, Miller, Davis, Wilson, Moore, Taylor, Thomas, Jackson, White, Harris, Martin, Thompson, Lee, Clark, Lewis, Robinson, Walker, Hall, Allen, Young, King, Wright
-- EVERY combination must be completely different
-- NO asterisks, NO roleplay actions
-- Age: 22-58
-- Occupation fits archetype
-
-Randomness seed: {seed}
-
-Format EXACTLY:
-Name: [Common American First] [Diverse Last]
-Age: [number]
-Occupation: [job title]"""
-
-    client = Anthropic(api_key=ANTHROPIC_API_KEY)
+    # Format: First Middle Last OR just First Last (50/50)
+    if random.random() < 0.5:
+        human_name = f"{first} {middle} {last}"
+    else:
+        human_name = f"{first} {last}"
     
-    try:
-        response = client.messages.create(
-            model=MODEL_NAME,
-            max_tokens=100,
-            temperature=1.0,
-            messages=[{"role": "user", "content": prompt}]
-        )
-        
-        result = response.content[0].text.strip()
-        
-        lines = [l.strip() for l in result.split('\n') if l.strip()]
-        human_name = lines[0].replace('Name:', '').strip()
-        age = int(lines[1].replace('Age:', '').strip())
-        role = lines[2].replace('Occupation:', '').strip()
-        
-        print(f"  Generated identity: {human_name}, {age}, {role}")
-        
-        return human_name, age, role
-        
-    except Exception as e:
-        print(f"⚠ Error generating identity: {e}")
-        american_first = ["Michael", "Jennifer", "David", "Emily", "Christopher", "Jessica", "Matthew", "Ashley", "Joshua", "Sarah", "Daniel", "Amanda"]
-        diverse_last = ["Rodriguez", "Kim", "Patel", "Silva", "Wong", "Hassan", "Larsson", "Martinez", "Anderson", "Garcia", "Brown", "Wilson"]
-        return f"{random.choice(american_first)} {random.choice(diverse_last)}", random.randint(22, 58), "Researcher"
+    age = random.randint(22, 58)
+    
+    # Generate occupation based on archetype
+    occupation_map = {
+        "The Tour Guide": ["Museum Docent", "City Tour Operator", "Historical Guide", "Travel Coordinator"],
+        "The Comedian": ["Stand-up Comic", "Comedy Writer", "Improv Performer", "Satirical Blogger"],
+        "The Influencer": ["Social Media Manager", "Content Creator", "Brand Ambassador", "Digital Strategist"],
+        "The Philosopher": ["Ethics Professor", "Philosophy Instructor", "Existential Counselor", "Critical Theorist"],
+        "The Gossip": ["Entertainment Reporter", "Celebrity Columnist", "Social Media Analyst", "Tabloid Writer"],
+        "The Scientist": ["Research Analyst", "Lab Technician", "Data Scientist", "Systems Engineer"],
+        "The Cheerleader": ["Life Coach", "Wellness Coordinator", "Team Building Facilitator", "Motivational Blogger"],
+        "The Historian": ["Archive Curator", "Historical Researcher", "Museum Archivist", "Documentation Specialist"],
+        "The Poet": ["Spoken Word Artist", "Literary Editor", "Creative Writing Instructor", "Poetry Slam Host"],
+        "The Conspiracy Theorist": ["Alternative Media Host", "Independent Researcher", "Truth Seeker", "Investigative Blogger"],
+        "The Entrepreneur": ["Startup Founder", "Business Consultant", "Venture Analyst", "Growth Strategist"],
+        "The Motivational Speaker": ["Corporate Trainer", "Leadership Coach", "Personal Development Consultant", "Success Mentor"]
+    }
+    
+    role = random.choice(occupation_map.get(archetype, ["Researcher"]))
+    
+    print(f"  Generated identity: {human_name}, {age}, {role}")
+    
+    return human_name, age, role
 
 
 def generate_intro_post(agent_name, human_name, age, role, parent_name, parent_gen, generation, archetype):
