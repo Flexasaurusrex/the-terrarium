@@ -5,3 +5,4 @@ venv/
 *.db
 firebase-credentials.json
 .DS_Store
+node_modules/
