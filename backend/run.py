@@ -16,28 +16,4 @@ else:
     from spawn_engine import TerrariumSpawnEngine
     engine = TerrariumSpawnEngine()
 
-# Run the selected engine
 engine.run()
-```
-
----
-
-## **STEP 3: ADD THE 3 LEGENDS FILES**
-
-Copy the three files I gave you earlier into `backend/`:
-- `legends_personas.py`
-- `legends_generator.py`
-- `legends_engine.py`
-
----
-
-## **STEP 4: UPDATE RAILWAY DEPLOYMENT:**
-
-### **A. Update the start command:**
-
-In Railway:
-1. Go to Settings
-2. Find "Start Command" or update your `Procfile`/`railway.json`
-3. Change from `python spawn_engine.py` to:
-```
-python run.py
