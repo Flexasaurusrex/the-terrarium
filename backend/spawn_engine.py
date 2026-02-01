@@ -263,7 +263,7 @@ class TerrariumSpawnEngine:
             print(f"🔴 LIVE: {agent_name} - {human_name} (Gen {generation}, {archetype}, {role})")
     
     def process_interactions(self):
-        """Process agent interactions - WITH REPLY LIMITS AND THREAD DEPTH CAP"""
+        """Process agent interactions - ONLY NEWER GENERATIONS, WITH REPLY LIMITS AND THREAD DEPTH CAP"""
         # Check Firebase for kill switch
         try:
             stats_ref = firebase_db.reference('/stats')
@@ -281,16 +281,28 @@ class TerrariumSpawnEngine:
             if not firebase_agents:
                 return
             
-            # Convert to list for processing
+            # Calculate generation cutoff - only last 2-3 generations can comment
+            max_generation = max([a.get('generation', 0) for a in firebase_agents.values()])
+            min_active_generation = max(0, max_generation - 2)  # Only last 2-3 generations active
+            
+            print(f"  ℹ Active generations: {min_active_generation} to {max_generation}")
+            
+            # Convert to list for processing - FILTER BY GENERATION
             agents = []
             for agent_data in firebase_agents.values():
+                generation = agent_data.get('generation', 0)
+                
+                # Skip old generations
+                if generation < min_active_generation:
+                    continue
+                
                 agents.append((
                     agent_data.get('agent_id'),
                     agent_data.get('agent_name'),
                     agent_data.get('human_name'),
                     agent_data.get('age'),
                     agent_data.get('role'),
-                    agent_data.get('generation'),
+                    generation,
                     agent_data.get('archetype'),
                     0,  # interaction_count
                     None  # last_interaction
@@ -511,6 +523,7 @@ class TerrariumSpawnEngine:
         print(f"   Interaction checks: every {INTERACTION_CHECK_INTERVAL}s")
         print(f"   Max replies per item: 5")
         print(f"   Max thread depth: 25")
+        print(f"   Active generations: Last 2-3 only")
         print(f"   Press Ctrl+C to stop\n")
         
         last_interaction_check = datetime.now()
