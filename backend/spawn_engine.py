@@ -2,7 +2,7 @@ import time
 import schedule
 from datetime import datetime, timedelta
 from database import TerrariumDB
-from agent_generator import generate_intro_post, generate_comment, select_random_archetype, should_agent_interact, determine_relationship_type
+from agent_generator import generate_identity, generate_intro_post, generate_comment, select_random_archetype, should_agent_interact, determine_relationship_type
 from config import *
 import firebase_admin
 from firebase_admin import credentials, db as firebase_db
@@ -55,33 +55,52 @@ class TerrariumSpawnEngine:
             print(f"⚠ Could not check Firebase for existing agents: {e}")
         
         # Only create Agent-0 if Firebase is empty
-        stats = self.db.get_stats()
+        print("Creating Agent-0...")
         
-        if stats['total_agents'] == 0:
-            print("Creating Agent-0...")
-            
-            archetype = select_random_archetype()
-            intro = generate_intro_post(
-                agent_name="Agent-0",
-                parent_name="None",
-                parent_gen=0,
-                generation=0,
-                archetype=archetype
-            )
-            
-            agent_id = self.db.create_agent(
-                agent_name="Agent-0",
-                parent_id=None,
-                generation=0,
-                archetype=archetype,
-                first_post=intro
-            )
-            
-            self.db.queue_for_release(agent_id, datetime.now())
-            self.agent_counter = 1
-            
-            print(f"✓ Agent-0 created: {archetype}")
-            print(f"  Post: {intro[:80]}...")
+        archetype = select_random_archetype()
+        human_name, age, role = generate_identity(archetype)
+        
+        intro = generate_intro_post(
+            agent_name="Agent-0",
+            human_name=human_name,
+            age=age,
+            role=role,
+            parent_name="None",
+            parent_gen=0,
+            generation=0,
+            archetype=archetype
+        )
+        
+        agent_id = self.db.create_agent(
+            agent_name="Agent-0",
+            human_name=human_name,
+            age=age,
+            role=role,
+            parent_id=None,
+            generation=0,
+            archetype=archetype,
+            first_post=intro
+        )
+        
+        # Push Agent-0 to Firebase immediately
+        self.push_to_firebase({
+            'agent_id': agent_id,
+            'agent_name': "Agent-0",
+            'human_name': human_name,
+            'age': age,
+            'role': role,
+            'generation': 0,
+            'archetype': archetype,
+            'first_post': intro,
+            'parent_id': None,
+            'released_at': datetime.now().isoformat(),
+            'comments': []
+        })
+        
+        self.agent_counter = 1
+        
+        print(f"✓ Agent-0 created: {human_name} ({archetype}, {role})")
+        print(f"  Post: {intro[:80]}...")
     
     def generate_batch(self):
         """Generate a batch of agents"""
@@ -114,6 +133,7 @@ class TerrariumSpawnEngine:
                 parents.append((
                     agent_data.get('agent_id'),
                     agent_data.get('agent_name'),
+                    agent_data.get('human_name'),
                     agent_data.get('generation'),
                     agent_data.get('archetype')
                 ))
@@ -131,15 +151,21 @@ class TerrariumSpawnEngine:
         batch_start_time = datetime.now() + timedelta(seconds=30)
         
         for i in range(BATCH_SIZE):
-            parent_id, parent_name, parent_gen, parent_archetype = random.choice(parents)
+            parent_id, parent_name, parent_human_name, parent_gen, parent_archetype = random.choice(parents)
             
             agent_name = f"Agent-{self.agent_counter}"
             generation = parent_gen + 1
             archetype = select_random_archetype(parent_archetype)
             
             try:
+                # Generate unique identity
+                human_name, age, role = generate_identity(archetype)
+                
                 intro = generate_intro_post(
                     agent_name=agent_name,
+                    human_name=human_name,
+                    age=age,
+                    role=role,
                     parent_name=parent_name,
                     parent_gen=parent_gen,
                     generation=generation,
@@ -148,6 +174,9 @@ class TerrariumSpawnEngine:
                 
                 agent_id = self.db.create_agent(
                     agent_name=agent_name,
+                    human_name=human_name,
+                    age=age,
+                    role=role,
                     parent_id=parent_id,
                     generation=generation,
                     archetype=archetype,
@@ -157,7 +186,7 @@ class TerrariumSpawnEngine:
                 release_time = batch_start_time + timedelta(seconds=i * RELEASE_INTERVAL)
                 self.db.queue_for_release(agent_id, release_time)
                 
-                print(f"  ✓ {agent_name} (Gen {generation}, {archetype}) → release at {release_time.strftime('%H:%M:%S')}")
+                print(f"  ✓ {agent_name} - {human_name} (Gen {generation}, {archetype}, {role}) → release at {release_time.strftime('%H:%M:%S')}")
                 
                 self.agent_counter += 1
                 
@@ -170,12 +199,15 @@ class TerrariumSpawnEngine:
         """Release agents from queue that are ready"""
         ready = self.db.get_agents_ready_for_release()
         
-        for queue_id, agent_id, agent_name, generation, archetype, first_post, parent_id in ready:
+        for queue_id, agent_id, agent_name, human_name, age, role, generation, archetype, first_post, parent_id in ready:
             self.db.mark_released(queue_id, agent_id)
             
             self.push_to_firebase({
                 'agent_id': agent_id,
                 'agent_name': agent_name,
+                'human_name': human_name,
+                'age': age,
+                'role': role,
                 'generation': generation,
                 'archetype': archetype,
                 'first_post': first_post,
@@ -184,7 +216,7 @@ class TerrariumSpawnEngine:
                 'comments': []
             })
             
-            print(f"🔴 LIVE: {agent_name} (Gen {generation}, {archetype})")
+            print(f"🔴 LIVE: {agent_name} - {human_name} (Gen {generation}, {archetype}, {role})")
     
     def process_interactions(self):
         """Process agent interactions (comments, relationships)"""
@@ -211,6 +243,9 @@ class TerrariumSpawnEngine:
                 agents.append((
                     agent_data.get('agent_id'),
                     agent_data.get('agent_name'),
+                    agent_data.get('human_name'),
+                    agent_data.get('age'),
+                    agent_data.get('role'),
                     agent_data.get('generation'),
                     agent_data.get('archetype'),
                     0,  # interaction_count - we'll track this differently
@@ -226,13 +261,13 @@ class TerrariumSpawnEngine:
             return
         
         for agent_data in agents:
-            agent_id, agent_name, generation, archetype, interaction_count, last_interaction = agent_data
+            agent_id, agent_name, human_name, age, role, generation, archetype, interaction_count, last_interaction = agent_data
             
             if not should_agent_interact(archetype, last_interaction, interaction_count or 0):
                 continue
             
             target_content = random.choice(recent_content)
-            target_id, target_name, target_archetype, target_text, target_time, content_type = target_content
+            target_id, target_name, target_human_name, target_archetype, target_text, target_time, content_type = target_content
             
             if target_name == agent_name:
                 continue
@@ -240,9 +275,13 @@ class TerrariumSpawnEngine:
             try:
                 comment_text = generate_comment(
                     agent_name=agent_name,
+                    human_name=human_name,
+                    age=age,
+                    role=role,
                     agent_archetype=archetype,
                     target_post=target_text,
                     target_agent_name=target_name,
+                    target_human_name=target_human_name,
                     target_archetype=target_archetype
                 )
                 
@@ -259,13 +298,14 @@ class TerrariumSpawnEngine:
                     'comment_id': comment_id,
                     'agent_id': agent_id,
                     'agent_name': agent_name,
+                    'human_name': human_name,
                     'agent_archetype': archetype,
                     'target_agent_id': target_id,
                     'comment_text': comment_text,
                     'created_at': datetime.now().isoformat()
                 })
                 
-                print(f"💬 {agent_name} ({archetype}) commented on {target_name}'s post")
+                print(f"💬 {agent_name} ({human_name}, {archetype}) commented on {target_name}'s post")
                 
             except Exception as e:
                 print(f"⚠ Error generating comment: {e}")
@@ -315,7 +355,7 @@ class TerrariumSpawnEngine:
     def run(self):
         """Main spawn engine loop"""
         print("=" * 60)
-        print("THE TERRARIUM 2.0 - SPAWN ENGINE WITH SOCIAL DYNAMICS")
+        print("THE TERRARIUM 3.0 - FULL IDENTITY & CHAOS MODE")
         print("=" * 60)
         
         self.create_agent_zero()
