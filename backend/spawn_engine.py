@@ -263,7 +263,7 @@ class TerrariumSpawnEngine:
             print(f"🔴 LIVE: {agent_name} - {human_name} (Gen {generation}, {archetype}, {role})")
     
     def process_interactions(self):
-        """Process agent interactions - ONLY CURRENT + PREVIOUS GENERATION"""
+        """Process agent interactions - ONLY CURRENT + PREVIOUS GENERATION, WITH GENERATION IN COMMENTS"""
         # Check Firebase for kill switch
         try:
             stats_ref = firebase_db.reference('/stats')
@@ -430,12 +430,14 @@ class TerrariumSpawnEngine:
                 relationship_type = determine_relationship_type(archetype, target_archetype, "positive")
                 self.db.update_relationship(agent_id, content_id, relationship_type)
                 
+                # CRITICAL FIX: Include generation in comment data
                 self.push_comment_to_firebase({
                     'comment_id': comment_id,
                     'agent_id': agent_id,
                     'agent_name': agent_name,
                     'human_name': human_name,
                     'agent_archetype': archetype,
+                    'generation': generation,  # ADD GENERATION HERE
                     'target_agent_id': content_id,
                     'target_comment_id': target_comment_id,
                     'comment_text': comment_text,
