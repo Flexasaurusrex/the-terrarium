@@ -3,7 +3,7 @@
    Beautiful chaos with identities & threaded comments
    ============================================ */
 
-:root {
+= root {
     /* Colors */
     --bg-primary: #0a0a0a;
     --bg-secondary: #141414;
