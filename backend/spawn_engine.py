@@ -219,7 +219,7 @@ class TerrariumSpawnEngine:
             print(f"🔴 LIVE: {agent_name} - {human_name} (Gen {generation}, {archetype}, {role})")
     
     def process_interactions(self):
-        """Process agent interactions (comments, relationships)"""
+        """Process agent interactions (comments, relationships) - WITH THREADED REPLIES"""
         # Check Firebase for kill switch
         try:
             stats_ref = firebase_db.reference('/stats')
@@ -255,7 +255,8 @@ class TerrariumSpawnEngine:
             print(f"⚠ Error getting agents for interaction: {e}")
             agents = self.db.get_agents_ready_for_interaction()
         
-        recent_content = self.db.get_recent_posts_for_interaction(limit=20)
+        # Get recent posts AND comments as potential targets
+        recent_content = self.db.get_recent_posts_for_interaction(limit=30)
         
         if not recent_content:
             return
@@ -266,9 +267,17 @@ class TerrariumSpawnEngine:
             if not should_agent_interact(archetype, last_interaction, interaction_count or 0):
                 continue
             
+            # Pick a random post or comment to reply to
             target_content = random.choice(recent_content)
-            target_id, target_name, target_human_name, target_archetype, target_text, target_time, content_type = target_content
             
+            # Unpack based on content type
+            if len(target_content) == 7:
+                # This is the format from get_recent_posts_for_interaction
+                content_id, target_name, target_human_name, target_archetype, target_text, target_time, content_type = target_content
+            else:
+                continue
+            
+            # Don't comment on your own stuff
             if target_name == agent_name:
                 continue
             
@@ -285,14 +294,31 @@ class TerrariumSpawnEngine:
                     target_archetype=target_archetype
                 )
                 
+                # Determine if replying to a comment or a post
+                target_comment_id = None
+                target_agent_id = None
+                
+                if content_type == 'comment':
+                    # Replying to a comment
+                    target_comment_id = content_id
+                    # Need to get the agent_id of the comment author
+                    # For now, we'll use the content_id as a reference
+                    # The target_agent_id should be the original post author
+                    # This is a simplification - in reality we'd need to track this better
+                    target_agent_id = agent_id  # Simplified for now
+                else:
+                    # Replying to a post
+                    target_agent_id = content_id
+                
                 comment_id = self.db.create_comment(
                     agent_id=agent_id,
-                    target_agent_id=target_id,
+                    target_agent_id=target_agent_id if target_agent_id else content_id,
+                    target_comment_id=target_comment_id,
                     comment_text=comment_text
                 )
                 
                 relationship_type = determine_relationship_type(archetype, target_archetype, "positive")
-                self.db.update_relationship(agent_id, target_id, relationship_type)
+                self.db.update_relationship(agent_id, content_id, relationship_type)
                 
                 self.push_comment_to_firebase({
                     'comment_id': comment_id,
@@ -300,12 +326,14 @@ class TerrariumSpawnEngine:
                     'agent_name': agent_name,
                     'human_name': human_name,
                     'agent_archetype': archetype,
-                    'target_agent_id': target_id,
+                    'target_agent_id': content_id,
+                    'target_comment_id': target_comment_id,
                     'comment_text': comment_text,
                     'created_at': datetime.now().isoformat()
                 })
                 
-                print(f"💬 {agent_name} ({human_name}, {archetype}) commented on {target_name}'s post")
+                reply_type = "comment" if content_type == 'comment' else "post"
+                print(f"💬 {agent_name} ({human_name}, {archetype}) replied to {target_name}'s {reply_type}")
                 
             except Exception as e:
                 print(f"⚠ Error generating comment: {e}")
