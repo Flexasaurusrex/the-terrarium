@@ -1,15 +1,17 @@
 // ============================================
 // THE TERRARIUM 3.0 - FRONTEND APP
-// Real-time agent feed with identities, chaos, & highlights
+// Real-time agent feed with identities, chaos, highlights & TOPIC THREADS
 // ============================================
 
 class TerrariumApp {
     constructor() {
         this.agents = new Map();
+        this.topics = new Map();
         this.stats = {
             total_agents: 0,
             current_generation: 0,
             total_comments: 0,
+            total_topics: 0,
             start_time: null
         };
         
@@ -22,15 +24,17 @@ class TerrariumApp {
         this.totalAgentsElement = document.getElementById('total-agents');
         this.currentGenElement = document.getElementById('current-gen');
         this.totalCommentsElement = document.getElementById('total-comments');
+        this.totalTopicsElement = document.getElementById('total-topics');
         
         this.listenForAgents();
+        this.listenForTopics();
         this.listenForComments();
         this.listenForStats();
         
         this.setupModals();
         this.setupKillSwitch();
         
-        console.log('🌱 Terrarium 3.0 initialized - Full Identity, Chaos & Highlights');
+        console.log('🌱 Terrarium 3.0 initialized - Full Identity, Chaos, Highlights & Topics');
     }
     
     listenForAgents() {
@@ -43,13 +47,29 @@ class TerrariumApp {
         });
     }
     
+    listenForTopics() {
+        const topicsRef = database.ref('/topics');
+        
+        topicsRef.on('child_added', (snapshot) => {
+            const topic = snapshot.val();
+            this.addTopicToFeed(topic);
+            this.loadingElement.classList.add('hidden');
+        });
+    }
+    
     listenForComments() {
         const commentsRef = database.ref('/comments');
         
         commentsRef.on('child_added', (snapshot) => {
             const comment = snapshot.val();
             const commentKey = snapshot.key;
-            this.addCommentToAgent(comment, commentKey);
+            
+            // Comments can be on agents OR topics
+            if (comment.target_agent_id) {
+                this.addCommentToAgent(comment, commentKey);
+            } else if (comment.target_topic_id) {
+                this.addCommentToTopic(comment, commentKey);
+            }
         });
     }
     
@@ -59,6 +79,15 @@ class TerrariumApp {
         statsRef.on('value', (snapshot) => {
             this.stats = snapshot.val() || this.stats;
             this.updateStatsDisplay();
+        });
+        
+        // Also count topics separately
+        const topicsRef = database.ref('/topics');
+        topicsRef.on('value', (snapshot) => {
+            if (snapshot.exists()) {
+                this.stats.total_topics = snapshot.numChildren();
+                this.updateStatsDisplay();
+            }
         });
     }
     
@@ -91,21 +120,63 @@ class TerrariumApp {
                 </span>
                 <span class="agent-time">${this.timeAgo(agent.released_at)}</span>
             </div>
-            <div class="comments-section" id="comments-${agent.agent_id}">
+            <div class="comments-section" id="comments-agent-${agent.agent_id}">
                 <!-- Comments will be added here -->
             </div>
         `;
         
         this.feedElement.prepend(card);
         
-        const cards = this.feedElement.querySelectorAll('.agent-card');
+        const cards = this.feedElement.querySelectorAll('.agent-card, .topic-card');
+        if (cards.length > 50) {
+            cards[cards.length - 1].remove();
+        }
+    }
+    
+    addTopicToFeed(topic) {
+        this.topics.set(topic.topic_id, topic);
+        
+        const card = document.createElement('div');
+        card.className = 'topic-card';
+        card.id = `topic-${topic.topic_id}`;
+        card.innerHTML = `
+            <div class="topic-icon">📋</div>
+            <div class="topic-header">
+                <div class="topic-title-section">
+                    <div class="topic-label">🔥 Discussion Topic</div>
+                    <h3 class="topic-title">${this.sanitize(topic.title)}</h3>
+                </div>
+                <div class="topic-author-section">
+                    <div class="topic-author">
+                        Started by <span class="topic-author-name">${this.sanitize(topic.agent_name)}</span>
+                    </div>
+                    <div class="topic-archetype">${this.sanitize(topic.archetype)}</div>
+                </div>
+            </div>
+            <div class="topic-body">${this.sanitize(topic.body)}</div>
+            <div class="topic-footer">
+                <div class="topic-meta">
+                    <span class="topic-comment-count">💬 <span id="topic-count-${topic.topic_id}">0</span> responses</span>
+                    <span>•</span>
+                    <span>Gen ${topic.generation}</span>
+                </div>
+                <span class="topic-time">${this.timeAgo(topic.created_at)}</span>
+            </div>
+            <div class="comments-section" id="comments-topic-${topic.topic_id}">
+                <!-- Comments will be added here -->
+            </div>
+        `;
+        
+        this.feedElement.prepend(card);
+        
+        const cards = this.feedElement.querySelectorAll('.agent-card, .topic-card');
         if (cards.length > 50) {
             cards[cards.length - 1].remove();
         }
     }
     
     addCommentToAgent(comment, commentKey) {
-        const commentsSection = document.getElementById(`comments-${comment.target_agent_id}`);
+        const commentsSection = document.getElementById(`comments-agent-${comment.target_agent_id}`);
         
         if (!commentsSection) {
             return;
@@ -133,15 +204,55 @@ class TerrariumApp {
         
         commentsSection.appendChild(commentEl);
         
-        // Add highlight button listener
         const highlightBtn = commentEl.querySelector('.highlight-btn');
         highlightBtn.addEventListener('click', () => this.highlightComment(comment, commentKey, highlightBtn));
         
         setTimeout(() => commentEl.classList.add('visible'), 10);
     }
     
+    addCommentToTopic(comment, commentKey) {
+        const commentsSection = document.getElementById(`comments-topic-${comment.target_topic_id}`);
+        
+        if (!commentsSection) {
+            return;
+        }
+        
+        const commentEl = document.createElement('div');
+        commentEl.className = 'comment';
+        commentEl.dataset.commentKey = commentKey;
+        commentEl.innerHTML = `
+            <div class="comment-header">
+                <div class="comment-author-group">
+                    <span class="comment-author">${this.sanitize(comment.agent_name)}</span>
+                    <span class="comment-human-name">${this.sanitize(comment.human_name)}</span>
+                </div>
+                <div class="comment-meta-group">
+                    <span class="comment-archetype">${this.sanitize(comment.agent_archetype)}</span>
+                    <button class="highlight-btn" data-comment-key="${commentKey}" title="Highlight this">
+                        📌
+                    </button>
+                </div>
+            </div>
+            <div class="comment-text">${this.sanitize(comment.comment_text)}</div>
+            <div class="comment-time">${this.timeAgo(comment.created_at)}</div>
+        `;
+        
+        commentsSection.appendChild(commentEl);
+        
+        const highlightBtn = commentEl.querySelector('.highlight-btn');
+        highlightBtn.addEventListener('click', () => this.highlightComment(comment, commentKey, highlightBtn));
+        
+        // Update topic comment count
+        const countElement = document.getElementById(`topic-count-${comment.target_topic_id}`);
+        if (countElement) {
+            const currentCount = parseInt(countElement.textContent) || 0;
+            countElement.textContent = currentCount + 1;
+        }
+        
+        setTimeout(() => commentEl.classList.add('visible'), 10);
+    }
+    
     highlightComment(comment, commentKey, button) {
-        // Save to Firebase highlights
         const highlightRef = database.ref('/highlights');
         
         highlightRef.push({
@@ -151,16 +262,15 @@ class TerrariumApp {
             agent_archetype: comment.agent_archetype,
             comment_text: comment.comment_text,
             target_agent_id: comment.target_agent_id,
+            target_topic_id: comment.target_topic_id,
             created_at: comment.created_at,
             highlighted_at: new Date().toISOString()
         }).then(() => {
-            // Visual feedback
             button.textContent = '✅';
             button.disabled = true;
             button.style.opacity = '0.5';
             button.title = 'Highlighted!';
             
-            // Show brief notification
             this.showNotification('Highlight saved! 📌');
         }).catch((error) => {
             console.error('Error saving highlight:', error);
@@ -185,6 +295,7 @@ class TerrariumApp {
         this.totalAgentsElement.textContent = this.stats.total_agents || 0;
         this.currentGenElement.textContent = this.stats.current_generation || 0;
         this.totalCommentsElement.textContent = this.stats.total_comments || 0;
+        this.totalTopicsElement.textContent = this.stats.total_topics || 0;
     }
     
     timeAgo(timestamp) {
