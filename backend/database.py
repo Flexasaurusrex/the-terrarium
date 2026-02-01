@@ -16,6 +16,9 @@ class TerrariumDB:
             CREATE TABLE IF NOT EXISTS agents (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 agent_name TEXT UNIQUE NOT NULL,
+                human_name TEXT NOT NULL,
+                age INTEGER NOT NULL,
+                role TEXT NOT NULL,
                 parent_id INTEGER,
                 generation INTEGER NOT NULL,
                 archetype TEXT NOT NULL,
@@ -125,17 +128,17 @@ class TerrariumDB:
         conn.commit()
         conn.close()
     
-    def create_agent(self, agent_name, parent_id, generation, archetype, first_post):
-        """Create new agent in database"""
+    def create_agent(self, agent_name, human_name, age, role, parent_id, generation, archetype, first_post):
+        """Create new agent in database with identity"""
         conn = sqlite3.connect(self.db_path)
         c = conn.cursor()
         
         created_at = datetime.now()
         
         c.execute('''
-            INSERT INTO agents (agent_name, parent_id, generation, archetype, first_post, created_at, status)
-            VALUES (?, ?, ?, ?, ?, ?, 'queued')
-        ''', (agent_name, parent_id, generation, archetype, first_post, created_at))
+            INSERT INTO agents (agent_name, human_name, age, role, parent_id, generation, archetype, first_post, created_at, status)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'queued')
+        ''', (agent_name, human_name, age, role, parent_id, generation, archetype, first_post, created_at))
         
         agent_id = c.lastrowid
         
@@ -165,7 +168,7 @@ class TerrariumDB:
         now = datetime.now()
         
         c.execute('''
-            SELECT q.id, q.agent_id, a.agent_name, a.generation, a.archetype, a.first_post, a.parent_id
+            SELECT q.id, q.agent_id, a.agent_name, a.human_name, a.age, a.role, a.generation, a.archetype, a.first_post, a.parent_id
             FROM spawn_queue q
             JOIN agents a ON q.agent_id = a.id
             WHERE q.released = FALSE AND q.scheduled_release <= ?
@@ -197,7 +200,7 @@ class TerrariumDB:
         c = conn.cursor()
         
         c.execute('''
-            SELECT id, agent_name, generation, archetype
+            SELECT id, agent_name, human_name, generation, archetype
             FROM agents
             WHERE status = 'live'
             ORDER BY RANDOM()
@@ -214,7 +217,7 @@ class TerrariumDB:
         c = conn.cursor()
         
         c.execute('''
-            SELECT id, agent_name, generation, archetype, interaction_count, last_interaction_at
+            SELECT id, agent_name, human_name, generation, archetype, interaction_count, last_interaction_at
             FROM agents
             WHERE status = 'live'
         ''')
@@ -230,7 +233,7 @@ class TerrariumDB:
         c = conn.cursor()
         
         c.execute('''
-            SELECT a.id, a.agent_name, a.archetype, a.first_post, a.released_at, 'post' as type
+            SELECT a.id, a.agent_name, a.human_name, a.archetype, a.first_post, a.released_at, 'post' as type
             FROM agents a
             WHERE a.status = 'live'
             ORDER BY a.released_at DESC
@@ -240,7 +243,7 @@ class TerrariumDB:
         posts = c.fetchall()
         
         c.execute('''
-            SELECT c.id, a.agent_name, a.archetype, c.comment_text, c.created_at, 'comment' as type
+            SELECT c.id, a.agent_name, a.human_name, a.archetype, c.comment_text, c.created_at, 'comment' as type
             FROM comments c
             JOIN agents a ON c.agent_id = a.id
             ORDER BY c.created_at DESC
@@ -252,7 +255,7 @@ class TerrariumDB:
         conn.close()
         
         all_content = posts + comments
-        all_content.sort(key=lambda x: x[4], reverse=True)
+        all_content.sort(key=lambda x: x[5], reverse=True)
         
         return all_content[:limit]
     
@@ -356,7 +359,7 @@ class TerrariumDB:
         c = conn.cursor()
         
         c.execute('''
-            SELECT id, agent_name, archetype, generation, first_post, interaction_count
+            SELECT id, agent_name, human_name, age, role, archetype, generation, first_post, interaction_count
             FROM agents WHERE id = ?
         ''', (agent_id,))
         
