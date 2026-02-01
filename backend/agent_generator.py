@@ -109,31 +109,27 @@ def generate_identity(archetype):
     entropy = f"{time.time()}{random.random()}{archetype}{random.randint(1, 999999)}"
     seed = int(hashlib.md5(entropy.encode()).hexdigest()[:8], 16)
     
-    prompt = f"""Generate a UNIQUE and DIVERSE identity for an AI agent. Archetype: {archetype}
+    prompt = f"""Generate a COMPLETELY UNIQUE identity for an AI agent. Archetype: {archetype}
 
-CRITICAL REQUIREMENTS FOR UNIQUENESS:
-- Mix of American names AND international names (50/50 split)
-- American examples: Blake Rodriguez, Jordan Kim, Taylor Washington, Casey O'Brien, Morgan Patel, Riley Chen, Avery Martinez
-- International examples: Kofi Andersen, Svetlana Okafor, Rajesh Dubois, Amara Nakamura, Yuki O'Brien
-- AVOID these names completely: Esperanza, Kowalski, Kowalczyk, Marcus, Chen, Alex, Lee, Johnson, Smith, Nkem, Nasrin, Isadora, Lindqvist, Johansson, Kowalenko
-- Every name must be completely different and memorable
-- Use unexpected combinations
+CRITICAL: This name must be DIFFERENT from any name you've generated before. Think creatively.
 
 Requirements:
-1. First and last name (mix common American with diverse surnames or vice versa)
-2. Age: 22-58
-3. Occupation that fits the archetype (can be unusual/creative but also grounded)
+1. First and last name - Mix American, European, Asian, African, Middle Eastern, Latin American origins
+2. Age: 22-58  
+3. Occupation that fits the archetype
+
+VARIETY RULES:
+- Never repeat the same first name twice
+- Never repeat the same last name twice
+- Draw from ALL cultures: Japanese, Nigerian, Brazilian, Polish, Iranian, Korean, Vietnamese, Mexican, Egyptian, Swedish, Indian, Thai, Turkish, Greek, etc.
+- Mix unexpected combinations: American first + Asian last, African first + European last, Middle Eastern first + Latin last, etc.
+- NO common names like: John, Michael, David, Sarah, Maria, Jennifer, Robert, Linda, James, Patricia
+- NO overused names from AI generation: Zara, River, Phoenix, Sage, Luna, Nova, Atlas, Jasper
+- Think of REAL but UNCOMMON names from actual cultures
 
 Randomness seed: {seed}
 
-Examples of GOOD diverse names:
-- Blake Okafor (American first + Nigerian last)
-- Jordan Nakamura (American first + Japanese last)
-- Casey Dubois (American first + French last)
-- Svetlana Martinez (Russian first + Spanish last)
-- Dmitri Washington (Russian first + American last)
-- Amara O'Brien (Nigerian first + Irish last)
-- Kenji Rodriguez (Japanese first + Spanish last)
+Be creative. Think of names you wouldn't normally generate. Draw from lesser-known regions and cultures.
 
 Format EXACTLY:
 Name: [First Last]
@@ -165,8 +161,8 @@ Occupation: [creative job title]"""
     except Exception as e:
         print(f"⚠ Error generating identity: {e}")
         # Better fallback with actual randomness
-        unusual_first = ["Zephyr", "Indira", "Kasper", "Nadia", "Thiago", "Eshe", "Ravi", "Amina", "Kofi", "Svetlana", "Zinzi", "Tariq", "Yuki", "Kenji", "Blake", "Jordan", "Taylor", "Casey"]
-        unusual_last = ["Vasquez", "Osei", "Ivanova", "Nguyen", "Bergström", "O'Connor", "Petrov", "Andersen", "Okafor", "Dubois", "Larsson", "Mbatha", "Rodriguez", "Washington", "Martinez"]
+        unusual_first = ["Leif", "Chiara", "Hassan", "Priya", "Mateo", "Elif", "Kwame", "Anika", "Soren", "Fatima", "Luca", "Ayesha", "Diego", "Ingrid", "Rashid", "Camila"]
+        unusual_last = ["Vasquez", "Tanaka", "Osei", "Ivanova", "Nguyen", "O'Sullivan", "Petrov", "Silva", "Larsson", "Mbatha", "Kaminski", "Santos", "Park", "Hassan", "Dubois", "Moretti"]
         return f"{random.choice(unusual_first)} {random.choice(unusual_last)}", random.randint(22, 58), "Researcher"
 
 
@@ -263,14 +259,14 @@ def perform_web_search(query):
         return None
 
 
-def generate_comment(agent_name, human_name, age, role, agent_archetype, target_post, target_agent_name, target_human_name, target_archetype, conversation_context=""):
+def generate_comment(agent_name, human_name, age, role, agent_archetype, target_post, target_agent_name, target_human_name, target_archetype, conversation_context="", force_search=False):
     """Generate a CHAOTIC comment - with optional web search"""
     
     comment_style = ARCHETYPE_COMMENT_STYLES[agent_archetype]
     chaos_topic = random.choice(CHAOS_TOPICS)
     
-    # Decide if we should use web search
-    use_search = should_use_web_search(agent_archetype, target_post, target_archetype)
+    # Decide if we should use web search - FORCE IT if parameter is True
+    use_search = force_search or should_use_web_search(agent_archetype, target_post, target_archetype)
     
     search_context = ""
     if use_search:
@@ -296,7 +292,7 @@ Write ONLY the search query, nothing else."""
             search_results = perform_web_search(search_query)
             
             if search_results:
-                search_context = f"\n\nWEB SEARCH RESULTS for '{search_query}':\n{search_results[:800]}\n\nYou can reference these search results naturally if relevant."
+                search_context = f"\n\nWEB SEARCH RESULTS for '{search_query}':\n{search_results[:800]}\n\nIMPORTANT: You MUST reference at least one specific fact, finding, or detail from these search results in your comment. Integrate it naturally into your argument without saying 'I searched' or 'according to my search' - just state the facts as if you know them."
                 print(f"  ✓ Got search results")
         except Exception as e:
             print(f"  ⚠ Search query generation failed: {e}")
@@ -336,7 +332,7 @@ COMMENT REQUIREMENTS:
 - Address them directly (use "you" when talking to them)
 - Reference specific details from their post
 - Let your job as a {role} inform your perspective in UNIQUE ways
-- If you have web search results, reference them naturally
+- If you have web search results, you MUST incorporate specific findings from them (mention actual facts, data, or details you found) WITHOUT saying "I searched" or "I looked up" - just state the facts
 - Have a STRONG, VARIED opinion - don't repeat common phrases
 - Vary your response style: questions, declarations, jokes, challenges, theories, observations
 - Mix sentence lengths and tones
