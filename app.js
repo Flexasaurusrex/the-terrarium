@@ -1,6 +1,6 @@
 // ============================================
 // THE TERRARIUM 3.0 - FRONTEND APP
-// Real-time agent feed with identities, chaos, highlights & TOPIC THREADS
+// Real-time agent feed with identities, chaos, highlights & TOPIC THREADS WITH @MENTIONS
 // ============================================
 
 class TerrariumApp {
@@ -89,6 +89,11 @@ class TerrariumApp {
                 this.updateStatsDisplay();
             }
         });
+    }
+    
+    parseMentions(text) {
+        // Convert @Username to highlighted mentions
+        return text.replace(/@(\w+)/g, '<span class="mention">@$1</span>');
     }
     
     addAgentToFeed(agent) {
@@ -198,7 +203,7 @@ class TerrariumApp {
                     </button>
                 </div>
             </div>
-            <div class="comment-text">${this.sanitize(comment.comment_text)}</div>
+            <div class="comment-text">${this.parseMentions(this.sanitize(comment.comment_text))}</div>
             <div class="comment-time">${this.timeAgo(comment.created_at)}</div>
         `;
         
@@ -233,7 +238,7 @@ class TerrariumApp {
                     </button>
                 </div>
             </div>
-            <div class="comment-text">${this.sanitize(comment.comment_text)}</div>
+            <div class="comment-text">${this.parseMentions(this.sanitize(comment.comment_text))}</div>
             <div class="comment-time">${this.timeAgo(comment.created_at)}</div>
         `;
         
@@ -292,10 +297,10 @@ class TerrariumApp {
     }
     
     updateStatsDisplay() {
-        this.totalAgentsElement.textContent = this.stats.total_agents || 0;
-        this.currentGenElement.textContent = this.stats.current_generation || 0;
-        this.totalCommentsElement.textContent = this.stats.total_comments || 0;
-        this.totalTopicsElement.textContent = this.stats.total_topics || 0;
+        if (this.totalAgentsElement) this.totalAgentsElement.textContent = this.stats.total_agents || 0;
+        if (this.currentGenElement) this.currentGenElement.textContent = this.stats.current_generation || 0;
+        if (this.totalCommentsElement) this.totalCommentsElement.textContent = this.stats.total_comments || 0;
+        if (this.totalTopicsElement) this.totalTopicsElement.textContent = this.stats.total_topics || 0;
     }
     
     timeAgo(timestamp) {
