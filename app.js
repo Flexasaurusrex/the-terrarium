@@ -22,13 +22,10 @@ class TerrariumApp {
         this.totalAgentsElement = document.getElementById('total-agents');
         this.currentGenElement = document.getElementById('current-gen');
         this.totalCommentsElement = document.getElementById('total-comments');
-        this.uptimeElement = document.getElementById('uptime');
         
         this.listenForAgents();
         this.listenForComments();
         this.listenForStats();
-        
-        this.startUptimeCounter();
         
         this.setupModals();
         this.setupKillSwitch();
@@ -125,26 +122,6 @@ class TerrariumApp {
         this.totalAgentsElement.textContent = this.stats.total_agents || 0;
         this.currentGenElement.textContent = this.stats.current_generation || 0;
         this.totalCommentsElement.textContent = this.stats.total_comments || 0;
-    }
-    
-    startUptimeCounter() {
-        setInterval(() => {
-            if (this.stats.start_time) {
-                const uptime = this.calculateUptime(this.stats.start_time);
-                this.uptimeElement.textContent = uptime;
-            }
-        }, 1000);
-    }
-    
-    calculateUptime(startTime) {
-        const start = new Date(startTime);
-        const now = new Date();
-        const diff = now - start;
-        
-        const hours = Math.floor(diff / (1000 * 60 * 60));
-        const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-        
-        return `${hours}h ${minutes}m`;
     }
     
     timeAgo(timestamp) {
