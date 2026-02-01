@@ -7,7 +7,6 @@ from config import *
 import firebase_admin
 from firebase_admin import credentials, db as firebase_db
 import random
-import os
 
 class TerrariumSpawnEngine:
     def __init__(self):
@@ -17,25 +16,25 @@ class TerrariumSpawnEngine:
         self.topic_counter = 0
         
     def init_firebase(self):
-    """Initialize Firebase for real-time updates"""
-    try:
-        # Get credentials from config (already parsed from env var)
-        creds = FIREBASE_CREDENTIALS.copy()
-        
-        # Fix the private key - replace literal \n with actual newlines
-        if 'private_key' in creds:
-            creds['private_key'] = creds['private_key'].replace('\\n', '\n')
-        
-        cred = credentials.Certificate(creds)
-        firebase_admin.initialize_app(cred, {
-            'databaseURL': FIREBASE_DB_URL
-        })
-        print("✓ Firebase initialized")
-    except Exception as e:
-        print(f"⚠ Firebase init failed: {e}")
-        import traceback
-        traceback.print_exc()
-        raise
+        """Initialize Firebase for real-time updates"""
+        try:
+            # Get credentials from config (already parsed from env var)
+            creds = FIREBASE_CREDENTIALS.copy()
+            
+            # Fix the private key - replace literal \n with actual newlines
+            if 'private_key' in creds:
+                creds['private_key'] = creds['private_key'].replace('\\n', '\n')
+            
+            cred = credentials.Certificate(creds)
+            firebase_admin.initialize_app(cred, {
+                'databaseURL': FIREBASE_DB_URL
+            })
+            print("✓ Firebase initialized")
+        except Exception as e:
+            print(f"⚠ Firebase init failed: {e}")
+            import traceback
+            traceback.print_exc()
+            raise
     
     def generate_unique_identity(self, archetype):
         """Generate identity with uniqueness check against Firebase"""
