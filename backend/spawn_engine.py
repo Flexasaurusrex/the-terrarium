@@ -27,6 +27,34 @@ class TerrariumSpawnEngine:
     
     def create_agent_zero(self):
         """Create the first agent (Agent-0) if doesn't exist"""
+        # Check Firebase first to see if agents already exist
+        try:
+            ref = firebase_db.reference('/stats')
+            firebase_stats = ref.get()
+            
+            if firebase_stats and firebase_stats.get('total_agents', 0) > 0:
+                print(f"✓ Terrarium already has {firebase_stats['total_agents']} agents. Skipping Agent-0 creation.")
+                # Set agent counter to continue from existing agents
+                agents_ref = firebase_db.reference('/agents')
+                existing_agents = agents_ref.get()
+                if existing_agents:
+                    # Find highest agent number by parsing agent_name
+                    max_agent_num = 0
+                    for agent in existing_agents.values():
+                        agent_name = agent.get('agent_name', 'Agent-0')
+                        try:
+                            agent_num = int(agent_name.split('-')[1])
+                            if agent_num > max_agent_num:
+                                max_agent_num = agent_num
+                        except:
+                            pass
+                    self.agent_counter = max_agent_num + 1
+                    print(f"✓ Resuming from Agent-{self.agent_counter}")
+                return
+        except Exception as e:
+            print(f"⚠ Could not check Firebase for existing agents: {e}")
+        
+        # Only create Agent-0 if Firebase is empty
         stats = self.db.get_stats()
         
         if stats['total_agents'] == 0:
@@ -57,13 +85,42 @@ class TerrariumSpawnEngine:
     
     def generate_batch(self):
         """Generate a batch of agents"""
-        stats = self.db.get_stats()
+        # Check Firebase stats instead of local DB
+        try:
+            stats_ref = firebase_db.reference('/stats')
+            stats = stats_ref.get()
+            
+            if stats and stats.get('kill_switch_active', False):
+                print("⚠ Kill switch active. Stopping generation.")
+                return
+        except:
+            stats = self.db.get_stats()
+            if stats['kill_switch_active']:
+                print("⚠ Kill switch active. Stopping generation.")
+                return
         
-        if stats['kill_switch_active']:
-            print("⚠ Kill switch active. Stopping generation.")
-            return
-        
-        parents = self.db.get_available_parents()
+        # Get parents from Firebase
+        try:
+            agents_ref = firebase_db.reference('/agents')
+            firebase_agents = agents_ref.get()
+            
+            if not firebase_agents:
+                print("⚠ No parents available yet. Waiting...")
+                return
+            
+            # Convert Firebase agents to parent list
+            parents = []
+            for agent_data in firebase_agents.values():
+                parents.append((
+                    agent_data.get('agent_id'),
+                    agent_data.get('agent_name'),
+                    agent_data.get('generation'),
+                    agent_data.get('archetype')
+                ))
+            
+        except Exception as e:
+            print(f"⚠ Error getting parents from Firebase: {e}")
+            parents = self.db.get_available_parents()
         
         if not parents:
             print("⚠ No parents available yet. Waiting...")
@@ -131,12 +188,38 @@ class TerrariumSpawnEngine:
     
     def process_interactions(self):
         """Process agent interactions (comments, relationships)"""
-        stats = self.db.get_stats()
+        # Check Firebase for kill switch
+        try:
+            stats_ref = firebase_db.reference('/stats')
+            stats = stats_ref.get()
+            if stats and stats.get('kill_switch_active', False):
+                return
+        except:
+            pass
         
-        if stats['kill_switch_active']:
-            return
+        # Get agents from Firebase for interaction
+        try:
+            agents_ref = firebase_db.reference('/agents')
+            firebase_agents = agents_ref.get()
+            
+            if not firebase_agents:
+                return
+            
+            # Convert to list for processing
+            agents = []
+            for agent_data in firebase_agents.values():
+                agents.append((
+                    agent_data.get('agent_id'),
+                    agent_data.get('agent_name'),
+                    agent_data.get('generation'),
+                    agent_data.get('archetype'),
+                    0,  # interaction_count - we'll track this differently
+                    None  # last_interaction
+                ))
+        except Exception as e:
+            print(f"⚠ Error getting agents for interaction: {e}")
+            agents = self.db.get_agents_ready_for_interaction()
         
-        agents = self.db.get_agents_ready_for_interaction()
         recent_content = self.db.get_recent_posts_for_interaction(limit=20)
         
         if not recent_content:
@@ -193,9 +276,19 @@ class TerrariumSpawnEngine:
             ref = firebase_db.reference('/agents')
             ref.push(agent_data)
             
-            stats = self.db.get_stats()
-            stats_ref = firebase_db.reference('/stats')
-            stats_ref.set(stats)
+            # Update stats based on Firebase data
+            agents_ref = firebase_db.reference('/agents')
+            all_agents = agents_ref.get()
+            
+            if all_agents:
+                total = len(all_agents)
+                max_gen = max([a.get('generation', 0) for a in all_agents.values()])
+                
+                stats_ref = firebase_db.reference('/stats')
+                stats_ref.update({
+                    'total_agents': total,
+                    'current_generation': max_gen
+                })
             
         except Exception as e:
             print(f"⚠ Firebase push failed: {e}")
@@ -206,9 +299,15 @@ class TerrariumSpawnEngine:
             ref = firebase_db.reference('/comments')
             ref.push(comment_data)
             
-            stats = self.db.get_stats()
-            stats_ref = firebase_db.reference('/stats')
-            stats_ref.set(stats)
+            # Update comment count
+            comments_ref = firebase_db.reference('/comments')
+            all_comments = comments_ref.get()
+            
+            if all_comments:
+                stats_ref = firebase_db.reference('/stats')
+                stats_ref.update({
+                    'total_comments': len(all_comments)
+                })
             
         except Exception as e:
             print(f"⚠ Firebase comment push failed: {e}")
