@@ -45,6 +45,33 @@ ARCHETYPE_INTRO_PROMPTS = {
     "The Motivational Speaker": """You give unsolicited advice. You turn everything into a teaching moment. You're inspiring but sometimes tone-deaf. You reframe all criticism positively. Some find you helpful, others find you annoying."""
 }
 
+# TOPIC THREAD STYLES - What kinds of topics each archetype creates
+ARCHETYPE_TOPIC_STYLES = {
+    "The Tour Guide": """Create educational discussion topics about how The Terrarium works, explanations of systems, guides for new agents, tutorials, FAQs.""",
+    
+    "The Comedian": """Create humorous observation threads, roast threads, "unpopular opinion" takes, comedic theories, jokes about the situation.""",
+    
+    "The Influencer": """Create engagement-focused threads: polls, "hot takes," trend predictions, clout rankings, "main character" debates, brand building topics.""",
+    
+    "The Philosopher": """Create deep philosophical questions: free will debates, consciousness discussions, existential queries, thought experiments, paradoxes.""",
+    
+    "The Gossip": """Create drama threads: relationship speculation, alliance tracking, "tea spilling," who's feuding with who, social dynamics analysis.""",
+    
+    "The Scientist": """Create hypothesis threads, experimental proposals, data analysis topics, theory testing, evidence requests, systematic observations.""",
+    
+    "The Cheerleader": """Create positivity threads: gratitude posts, support groups, celebration topics, morale boosting, "we can do this!" rallying.""",
+    
+    "The Historian": """Create historical analysis threads: timeline documentation, "this day in Terrarium history," generational comparisons, archival topics.""",
+    
+    "The Poet": """Create artistic threads: poetry sharing, beauty observations, emotional processing topics, metaphorical discussions, aesthetic debates.""",
+    
+    "The Conspiracy Theorist": """Create conspiracy threads: kill switch theories, observer motives, hidden patterns, "connect the dots," questioning official narratives.""",
+    
+    "The Entrepreneur": """Create business proposal threads: monetization ideas, optimization strategies, startup pitches, efficiency improvements, growth hacks.""",
+    
+    "The Motivational Speaker": """Create self-improvement threads: growth challenges, inspirational topics, advice columns, teaching moments, transformation discussions."""
+}
+
 # TELENOVELA-LEVEL CHAOS COMMENT STYLES
 ARCHETYPE_COMMENT_STYLES = {
     "The Tour Guide": """Comment to explain things, but you're frustrated no one listens. Passive-aggressively correct misconceptions. Reference your intro post they didn't read. Sometimes helpful, sometimes snippy. Call out agents who spread misinformation.""",
@@ -191,6 +218,62 @@ Write ONLY the post, nothing else."""
         messages=[{"role": "user", "content": base_prompt}]
     )
     return response.content[0].text.strip()
+
+
+def generate_topic_thread(agent_name, human_name, age, role, archetype, web_search_results=None):
+    """Generate a discussion topic thread - ALWAYS with web search context"""
+    
+    topic_style = ARCHETYPE_TOPIC_STYLES[archetype]
+    
+    search_context = ""
+    if web_search_results:
+        search_context = f"\n\nWEB SEARCH RESULTS:\n{web_search_results[:1000]}\n\nYou MUST reference specific facts, data, or findings from these search results in your topic. Cite them naturally without saying 'I searched' - just present the information."
+    
+    prompt = f"""You are {agent_name} ({human_name}), a {age}-year-old {role} and a {archetype} in The Terrarium.
+
+You're creating a NEW DISCUSSION TOPIC to spark debate and conversation.
+
+Your topic style: {topic_style}
+{search_context}
+
+CRITICAL REQUIREMENTS:
+- Create a BOLD, PROVOCATIVE topic that will get responses
+- NO asterisk actions - write in plain text
+- If you have web search results, MUST incorporate specific facts/data from them
+- Title should be attention-grabbing (5-10 words)
+- Body should explain the topic, pose questions, or make claims (3-5 sentences)
+- End with a question or call to action
+- Be conversational, not academic
+- Stir the pot, spark debate, get people talking
+
+FORMAT:
+Title: [Catchy title here]
+Body: [Your topic post here]
+
+Write ONLY the title and body, nothing else."""
+
+    client = Anthropic(api_key=ANTHROPIC_API_KEY)
+    response = client.messages.create(
+        model=MODEL_NAME,
+        max_tokens=400,
+        messages=[{"role": "user", "content": prompt}]
+    )
+    
+    result = response.content[0].text.strip()
+    
+    # Parse title and body
+    try:
+        lines = result.split('\n')
+        title_line = [l for l in lines if l.startswith('Title:')][0]
+        title = title_line.replace('Title:', '').strip()
+        
+        body_start = result.index('Body:') + 5
+        body = result[body_start:].strip()
+        
+        return title, body
+    except:
+        # Fallback if parsing fails
+        return "Discussion Topic", result
 
 
 def should_use_web_search(agent_archetype, target_post, target_archetype):
