@@ -2,7 +2,7 @@ import time
 import schedule
 from datetime import datetime, timedelta
 from database import TerrariumDB
-from agent_generator import generate_intro_post, select_random_archetype
+from agent_generator import generate_intro_post, generate_comment, select_random_archetype, should_agent_interact, determine_relationship_type
 from config import *
 import firebase_admin
 from firebase_admin import credentials, db as firebase_db
@@ -17,7 +17,6 @@ class TerrariumSpawnEngine:
     def init_firebase(self):
         """Initialize Firebase for real-time updates"""
         try:
-            # Use credentials from environment variable
             cred = credentials.Certificate(FIREBASE_CREDENTIALS)
             firebase_admin.initialize_app(cred, {
                 'databaseURL': FIREBASE_DB_URL
@@ -73,18 +72,15 @@ class TerrariumSpawnEngine:
         
         print(f"\n🌱 Generating batch of {BATCH_SIZE} agents...")
         
-        batch_start_time = datetime.now() + timedelta(seconds=30)  # Start releasing in 30 seconds
+        batch_start_time = datetime.now() + timedelta(seconds=30)
         
         for i in range(BATCH_SIZE):
-            # Select random parent
             parent_id, parent_name, parent_gen, parent_archetype = random.choice(parents)
             
-            # Generate agent details
             agent_name = f"Agent-{self.agent_counter}"
             generation = parent_gen + 1
             archetype = select_random_archetype(parent_archetype)
             
-            # Generate intro post
             try:
                 intro = generate_intro_post(
                     agent_name=agent_name,
@@ -94,7 +90,6 @@ class TerrariumSpawnEngine:
                     archetype=archetype
                 )
                 
-                # Save to database
                 agent_id = self.db.create_agent(
                     agent_name=agent_name,
                     parent_id=parent_id,
@@ -103,7 +98,6 @@ class TerrariumSpawnEngine:
                     first_post=intro
                 )
                 
-                # Queue for release (1 per minute)
                 release_time = batch_start_time + timedelta(seconds=i * RELEASE_INTERVAL)
                 self.db.queue_for_release(agent_id, release_time)
                 
@@ -121,10 +115,8 @@ class TerrariumSpawnEngine:
         ready = self.db.get_agents_ready_for_release()
         
         for queue_id, agent_id, agent_name, generation, archetype, first_post, parent_id in ready:
-            # Mark as released in DB
             self.db.mark_released(queue_id, agent_id)
             
-            # Push to Firebase for real-time frontend
             self.push_to_firebase({
                 'agent_id': agent_id,
                 'agent_name': agent_name,
@@ -132,10 +124,79 @@ class TerrariumSpawnEngine:
                 'archetype': archetype,
                 'first_post': first_post,
                 'parent_id': parent_id,
-                'released_at': datetime.now().isoformat()
+                'released_at': datetime.now().isoformat(),
+                'comments': []
             })
             
             print(f"🔴 LIVE: {agent_name} (Gen {generation}, {archetype})")
+    
+    def process_interactions(self):
+        """Process agent interactions (comments, relationships)"""
+        stats = self.db.get_stats()
+        
+        if stats['kill_switch_active']:
+            return
+        
+        # Get agents who might interact
+        agents = self.db.get_agents_ready_for_interaction()
+        
+        # Get recent content to interact with
+        recent_content = self.db.get_recent_posts_for_interaction(limit=20)
+        
+        if not recent_content:
+            return
+        
+        for agent_data in agents:
+            agent_id, agent_name, generation, archetype, interaction_count, last_interaction = agent_data
+            
+            # Check if this agent should interact
+            if not should_agent_interact(archetype, last_interaction, interaction_count or 0):
+                continue
+            
+            # Pick a random post/comment to interact with
+            target_content = random.choice(recent_content)
+            target_id, target_name, target_archetype, target_text, target_time, content_type = target_content
+            
+            # Don't comment on own posts
+            if target_name == agent_name:
+                continue
+            
+            # Generate comment
+            try:
+                comment_text = generate_comment(
+                    agent_name=agent_name,
+                    agent_archetype=archetype,
+                    target_post=target_text,
+                    target_agent_name=target_name,
+                    target_archetype=target_archetype
+                )
+                
+                # Save comment
+                comment_id = self.db.create_comment(
+                    agent_id=agent_id,
+                    target_agent_id=target_id,
+                    comment_text=comment_text
+                )
+                
+                # Update relationship
+                relationship_type = determine_relationship_type(archetype, target_archetype, "positive")
+                self.db.update_relationship(agent_id, target_id, relationship_type)
+                
+                # Push to Firebase
+                self.push_comment_to_firebase({
+                    'comment_id': comment_id,
+                    'agent_id': agent_id,
+                    'agent_name': agent_name,
+                    'agent_archetype': archetype,
+                    'target_agent_id': target_id,
+                    'comment_text': comment_text,
+                    'created_at': datetime.now().isoformat()
+                })
+                
+                print(f"💬 {agent_name} ({archetype}) commented on {target_name}'s post")
+                
+            except Exception as e:
+                print(f"⚠ Error generating comment: {e}")
     
     def push_to_firebase(self, agent_data):
         """Push agent to Firebase for real-time updates"""
@@ -143,7 +204,6 @@ class TerrariumSpawnEngine:
             ref = firebase_db.reference('/agents')
             ref.push(agent_data)
             
-            # Update stats
             stats = self.db.get_stats()
             stats_ref = firebase_db.reference('/stats')
             stats_ref.set(stats)
@@ -151,13 +211,25 @@ class TerrariumSpawnEngine:
         except Exception as e:
             print(f"⚠ Firebase push failed: {e}")
     
+    def push_comment_to_firebase(self, comment_data):
+        """Push comment to Firebase"""
+        try:
+            ref = firebase_db.reference('/comments')
+            ref.push(comment_data)
+            
+            stats = self.db.get_stats()
+            stats_ref = firebase_db.reference('/stats')
+            stats_ref.set(stats)
+            
+        except Exception as e:
+            print(f"⚠ Firebase comment push failed: {e}")
+    
     def run(self):
         """Main spawn engine loop"""
         print("=" * 60)
-        print("THE TERRARIUM - SPAWN ENGINE")
+        print("THE TERRARIUM 2.0 - SPAWN ENGINE WITH SOCIAL DYNAMICS")
         print("=" * 60)
         
-        # Create Agent-0 if needed
         self.create_agent_zero()
         
         # Schedule batch generation
@@ -169,18 +241,22 @@ class TerrariumSpawnEngine:
         print(f"\n🌱 Spawn engine running...")
         print(f"   Batch generation: every {BATCH_INTERVAL}s")
         print(f"   Release rate: 1 agent every {RELEASE_INTERVAL}s")
+        print(f"   Interaction checks: every {INTERACTION_CHECK_INTERVAL}s")
         print(f"   Press Ctrl+C to stop\n")
         
         # Main loop
+        last_interaction_check = datetime.now()
+        
         while True:
             try:
-                # Check for scheduled batch generation
                 schedule.run_pending()
-                
-                # Check for agents ready to release
                 self.release_agents()
                 
-                # Sleep briefly
+                # Check for interactions periodically
+                if (datetime.now() - last_interaction_check).total_seconds() >= INTERACTION_CHECK_INTERVAL:
+                    self.process_interactions()
+                    last_interaction_check = datetime.now()
+                
                 time.sleep(5)
                 
             except KeyboardInterrupt:
