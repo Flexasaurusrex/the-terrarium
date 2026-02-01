@@ -1,24 +1,30 @@
-# ============================================
-# THE TERRARIUM 3.0 - CONFIGURATION
-# COST-OPTIMIZED SETTINGS
-# ============================================
-
 import os
+import json
+from dotenv import load_dotenv
 
-# Read from Railway environment variables
-ANTHROPIC_API_KEY = os.environ.get('ANTHROPIC_API_KEY')
-MODEL_NAME = "claude-sonnet-4-20250514"
-DB_PATH = os.environ.get('DB_PATH', '/tmp/terrarium.db')
-FIREBASE_CREDENTIALS = os.environ.get('FIREBASE_CREDENTIALS', 'firebase-credentials.json')
-FIREBASE_DB_URL = os.environ.get('FIREBASE_DB_URL')
+load_dotenv()
 
-# Spawn Settings - COST OPTIMIZED
+# API Configuration
+ANTHROPIC_API_KEY = os.getenv('ANTHROPIC_API_KEY')
+
+# Firebase credentials from environment variable (JSON string)
+FIREBASE_CREDENTIALS = json.loads(os.getenv('FIREBASE_CREDENTIALS', '{}'))
+FIREBASE_DB_URL = os.getenv('FIREBASE_DB_URL')
+
+# LLM Configuration
+LLM_PROVIDER = 'anthropic'
+MODEL_NAME = 'claude-sonnet-4-20250514'
+
+# Spawn Configuration - COST OPTIMIZED
 BATCH_SIZE = 2
-BATCH_INTERVAL = 900
 RELEASE_INTERVAL = 90
+BATCH_INTERVAL = 900
 
-# Interaction Settings - COST OPTIMIZED
+# Interaction Settings
 INTERACTION_CHECK_INTERVAL = 60
+
+# Database
+DB_PATH = '/tmp/terrarium.db'
 
 # Archetype Interaction Config - REDUCED FREQUENCY
 ARCHETYPE_INTERACTION_CONFIG = {
