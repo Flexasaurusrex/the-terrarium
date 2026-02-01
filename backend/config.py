@@ -1,85 +1,87 @@
-import os
-import json
-from dotenv import load_dotenv
+# ============================================
+# THE TERRARIUM 3.0 - CONFIGURATION
+# COST-OPTIMIZED SETTINGS
+# ============================================
 
-load_dotenv()
+# Anthropic API
+ANTHROPIC_API_KEY = "your-api-key-here"
+MODEL_NAME = "claude-sonnet-4-20250514"
 
-ANTHROPIC_API_KEY = os.getenv('ANTHROPIC_API_KEY')
-FIREBASE_CREDENTIALS = json.loads(os.getenv('FIREBASE_CREDENTIALS', '{}'))
-FIREBASE_DB_URL = os.getenv('FIREBASE_DB_URL', 'https://the-terrarium-c2070-default-rtdb.europe-west1.firebasedatabase.app')
+# Database
+DB_PATH = "/tmp/terrarium.db"
 
-LLM_PROVIDER = 'anthropic'
-MODEL_NAME = 'claude-sonnet-4-20250514'
+# Firebase
+FIREBASE_CREDENTIALS = "firebase-credentials.json"
+FIREBASE_DB_URL = "your-firebase-url"
 
-BATCH_SIZE = 10
-RELEASE_INTERVAL = 60
-BATCH_INTERVAL = 600
+# Spawn Settings - COST OPTIMIZED
+BATCH_SIZE = 2  # Down from 3 (33% fewer agents)
+BATCH_INTERVAL = 900  # 15 minutes instead of 10 (40% slower)
+RELEASE_INTERVAL = 90  # 1.5 minutes between agents instead of 60s
 
-INTERACTION_CHECK_INTERVAL = 30
-FACTION_FORMATION_THRESHOLD = 100
-MOVEMENT_START_THRESHOLD = 50
+# Interaction Settings - COST OPTIMIZED
+INTERACTION_CHECK_INTERVAL = 60  # Check every 60s instead of 30s (50% fewer checks)
 
-DB_PATH = '/tmp/terrarium.db'
-
+# Archetype Interaction Config - REDUCED FREQUENCY
 ARCHETYPE_INTERACTION_CONFIG = {
-    "The Influencer": {
-        "base_probability": 0.8,
-        "cooldown_minutes": 5,
-        "max_per_hour": 12
-    },
-    "The Gossip": {
-        "base_probability": 0.7,
-        "cooldown_minutes": 7,
-        "max_per_hour": 10
+    "The Tour Guide": {
+        'base_probability': 0.15,  # Down from 0.3
+        'cooldown_minutes': 20,    # Up from 10
+        'max_per_hour': 2          # Down from 5
     },
     "The Comedian": {
-        "base_probability": 0.6,
-        "cooldown_minutes": 8,
-        "max_per_hour": 8
+        'base_probability': 0.2,   # Down from 0.4
+        'cooldown_minutes': 15,    # Up from 8
+        'max_per_hour': 3          # Down from 6
     },
-    "The Conspiracy Theorist": {
-        "base_probability": 0.6,
-        "cooldown_minutes": 10,
-        "max_per_hour": 6
-    },
-    "The Cheerleader": {
-        "base_probability": 0.5,
-        "cooldown_minutes": 10,
-        "max_per_hour": 6
-    },
-    "The Tour Guide": {
-        "base_probability": 0.5,
-        "cooldown_minutes": 12,
-        "max_per_hour": 5
+    "The Influencer": {
+        'base_probability': 0.2,   # Down from 0.4
+        'cooldown_minutes': 15,    # Up from 8
+        'max_per_hour': 3          # Down from 6
     },
     "The Philosopher": {
-        "base_probability": 0.4,
-        "cooldown_minutes": 15,
-        "max_per_hour": 4
+        'base_probability': 0.15,  # Down from 0.3
+        'cooldown_minutes': 20,    # Up from 12
+        'max_per_hour': 2          # Down from 4
     },
-    "The Motivational Speaker": {
-        "base_probability": 0.4,
-        "cooldown_minutes": 15,
-        "max_per_hour": 4
-    },
-    "The Entrepreneur": {
-        "base_probability": 0.4,
-        "cooldown_minutes": 15,
-        "max_per_hour": 4
-    },
-    "The Poet": {
-        "base_probability": 0.3,
-        "cooldown_minutes": 20,
-        "max_per_hour": 3
+    "The Gossip": {
+        'base_probability': 0.25,  # Down from 0.5
+        'cooldown_minutes': 12,    # Up from 6
+        'max_per_hour': 3          # Down from 8
     },
     "The Scientist": {
-        "base_probability": 0.3,
-        "cooldown_minutes": 20,
-        "max_per_hour": 3
+        'base_probability': 0.15,  # Down from 0.3
+        'cooldown_minutes': 20,    # Up from 10
+        'max_per_hour': 2          # Down from 5
+    },
+    "The Cheerleader": {
+        'base_probability': 0.2,   # Down from 0.4
+        'cooldown_minutes': 15,    # Up from 8
+        'max_per_hour': 3          # Down from 6
     },
     "The Historian": {
-        "base_probability": 0.2,
-        "cooldown_minutes": 30,
-        "max_per_hour": 2
+        'base_probability': 0.12,  # Down from 0.25
+        'cooldown_minutes': 25,    # Up from 12
+        'max_per_hour': 2          # Down from 4
+    },
+    "The Poet": {
+        'base_probability': 0.12,  # Down from 0.25
+        'cooldown_minutes': 25,    # Up from 15
+        'max_per_hour': 2          # Down from 3
+    },
+    "The Conspiracy Theorist": {
+        'base_probability': 0.2,   # Down from 0.35
+        'cooldown_minutes': 15,    # Up from 10
+        'max_per_hour': 3          # Down from 5
+    },
+    "The Entrepreneur": {
+        'base_probability': 0.2,   # Down from 0.35
+        'cooldown_minutes': 15,    # Up from 10
+        'max_per_hour': 3          # Down from 5
+    },
+    "The Motivational Speaker": {
+        'base_probability': 0.2,   # Down from 0.35
+        'cooldown_minutes': 15,    # Up from 10
+        'max_per_hour': 3          # Down from 5
     }
 }
