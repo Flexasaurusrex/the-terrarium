@@ -24,7 +24,79 @@ class TerrariumDB:
                 created_at TIMESTAMP NOT NULL,
                 released_at TIMESTAMP,
                 status TEXT DEFAULT 'queued',
+                faction_id INTEGER,
+                interaction_count INTEGER DEFAULT 0,
+                last_interaction_at TIMESTAMP,
                 FOREIGN KEY (parent_id) REFERENCES agents(id)
+            )
+        ''')
+        
+        # Comments table
+        c.execute('''
+            CREATE TABLE IF NOT EXISTS comments (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                agent_id INTEGER NOT NULL,
+                target_agent_id INTEGER NOT NULL,
+                target_comment_id INTEGER,
+                comment_text TEXT NOT NULL,
+                created_at TIMESTAMP NOT NULL,
+                FOREIGN KEY (agent_id) REFERENCES agents(id),
+                FOREIGN KEY (target_agent_id) REFERENCES agents(id),
+                FOREIGN KEY (target_comment_id) REFERENCES comments(id)
+            )
+        ''')
+        
+        # Relationships table
+        c.execute('''
+            CREATE TABLE IF NOT EXISTS relationships (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                agent_id INTEGER NOT NULL,
+                target_agent_id INTEGER NOT NULL,
+                relationship_type TEXT NOT NULL,
+                strength INTEGER DEFAULT 1,
+                last_updated TIMESTAMP NOT NULL,
+                FOREIGN KEY (agent_id) REFERENCES agents(id),
+                FOREIGN KEY (target_agent_id) REFERENCES agents(id),
+                UNIQUE(agent_id, target_agent_id)
+            )
+        ''')
+        
+        # Factions table
+        c.execute('''
+            CREATE TABLE IF NOT EXISTS factions (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                name TEXT NOT NULL,
+                description TEXT,
+                created_at TIMESTAMP NOT NULL,
+                member_count INTEGER DEFAULT 0
+            )
+        ''')
+        
+        # Movements table
+        c.execute('''
+            CREATE TABLE IF NOT EXISTS movements (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                name TEXT NOT NULL,
+                description TEXT NOT NULL,
+                creator_agent_id INTEGER NOT NULL,
+                created_at TIMESTAMP NOT NULL,
+                supporter_count INTEGER DEFAULT 1,
+                opposer_count INTEGER DEFAULT 0,
+                FOREIGN KEY (creator_agent_id) REFERENCES agents(id)
+            )
+        ''')
+        
+        # Movement participation table
+        c.execute('''
+            CREATE TABLE IF NOT EXISTS movement_participation (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                movement_id INTEGER NOT NULL,
+                agent_id INTEGER NOT NULL,
+                stance TEXT NOT NULL,
+                joined_at TIMESTAMP NOT NULL,
+                FOREIGN KEY (movement_id) REFERENCES movements(id),
+                FOREIGN KEY (agent_id) REFERENCES agents(id),
+                UNIQUE(movement_id, agent_id)
             )
         ''')
         
@@ -46,7 +118,10 @@ class TerrariumDB:
                 total_agents INTEGER DEFAULT 0,
                 current_generation INTEGER DEFAULT 0,
                 start_time TIMESTAMP,
-                kill_switch_active BOOLEAN DEFAULT FALSE
+                kill_switch_active BOOLEAN DEFAULT FALSE,
+                total_comments INTEGER DEFAULT 0,
+                total_factions INTEGER DEFAULT 0,
+                total_movements INTEGER DEFAULT 0
             )
         ''')
         
@@ -118,10 +193,7 @@ class TerrariumDB:
         
         released_at = datetime.now()
         
-        # Update queue
         c.execute('UPDATE spawn_queue SET released = TRUE WHERE id = ?', (queue_id,))
-        
-        # Update agent
         c.execute('UPDATE agents SET status = ?, released_at = ? WHERE id = ?',
                  ('live', released_at, agent_id))
         
@@ -145,6 +217,119 @@ class TerrariumDB:
         
         return results
     
+    def get_agents_ready_for_interaction(self):
+        """Get agents who can interact (past cooldown period)"""
+        conn = sqlite3.connect(self.db_path)
+        c = conn.cursor()
+        
+        c.execute('''
+            SELECT id, agent_name, generation, archetype, interaction_count, last_interaction_at
+            FROM agents
+            WHERE status = 'live'
+        ''')
+        
+        results = c.fetchall()
+        conn.close()
+        
+        return results
+    
+    def get_recent_posts_for_interaction(self, limit=20):
+        """Get recent posts/comments that agents might interact with"""
+        conn = sqlite3.connect(self.db_path)
+        c = conn.cursor()
+        
+        # Get recent agent posts
+        c.execute('''
+            SELECT a.id, a.agent_name, a.archetype, a.first_post, a.released_at, 'post' as type
+            FROM agents a
+            WHERE a.status = 'live'
+            ORDER BY a.released_at DESC
+            LIMIT ?
+        ''', (limit,))
+        
+        posts = c.fetchall()
+        
+        # Get recent comments
+        c.execute('''
+            SELECT c.id, a.agent_name, a.archetype, c.comment_text, c.created_at, 'comment' as type
+            FROM comments c
+            JOIN agents a ON c.agent_id = a.id
+            ORDER BY c.created_at DESC
+            LIMIT ?
+        ''', (limit,))
+        
+        comments = c.fetchall()
+        
+        conn.close()
+        
+        # Combine and sort by timestamp
+        all_content = posts + comments
+        all_content.sort(key=lambda x: x[4], reverse=True)
+        
+        return all_content[:limit]
+    
+    def create_comment(self, agent_id, target_agent_id, comment_text, target_comment_id=None):
+        """Create a comment from one agent to another"""
+        conn = sqlite3.connect(self.db_path)
+        c = conn.cursor()
+        
+        created_at = datetime.now()
+        
+        c.execute('''
+            INSERT INTO comments (agent_id, target_agent_id, target_comment_id, comment_text, created_at)
+            VALUES (?, ?, ?, ?, ?)
+        ''', (agent_id, target_agent_id, target_comment_id, comment_text, created_at))
+        
+        comment_id = c.lastrowid
+        
+        # Update agent interaction stats
+        c.execute('''
+            UPDATE agents 
+            SET interaction_count = interaction_count + 1, last_interaction_at = ?
+            WHERE id = ?
+        ''', (created_at, agent_id))
+        
+        # Update total comments stat
+        c.execute('UPDATE stats SET total_comments = total_comments + 1 WHERE id = 1')
+        
+        conn.commit()
+        conn.close()
+        
+        return comment_id
+    
+    def update_relationship(self, agent_id, target_agent_id, relationship_type):
+        """Update or create relationship between two agents"""
+        conn = sqlite3.connect(self.db_path)
+        c = conn.cursor()
+        
+        now = datetime.now()
+        
+        # Check if relationship exists
+        c.execute('''
+            SELECT id, strength FROM relationships 
+            WHERE agent_id = ? AND target_agent_id = ?
+        ''', (agent_id, target_agent_id))
+        
+        existing = c.fetchone()
+        
+        if existing:
+            # Update existing relationship
+            new_strength = existing[1] + 1
+            c.execute('''
+                UPDATE relationships 
+                SET relationship_type = ?, strength = ?, last_updated = ?
+                WHERE id = ?
+            ''', (relationship_type, new_strength, now, existing[0]))
+        else:
+            # Create new relationship
+            c.execute('''
+                INSERT INTO relationships (agent_id, target_agent_id, relationship_type, strength, last_updated)
+                VALUES (?, ?, ?, 1, ?)
+            ''', (agent_id, target_agent_id, relationship_type, now))
+        
+        conn.commit()
+        conn.close()
+    
     def get_stats(self):
         """Get current terrarium stats"""
         conn = sqlite3.connect(self.db_path)
@@ -156,6 +341,9 @@ class TerrariumDB:
         c.execute('SELECT MAX(generation) FROM agents WHERE status = "live"')
         max_gen = c.fetchone()[0] or 0
         
+        c.execute('SELECT COUNT(*) FROM comments')
+        total_comments = c.fetchone()[0]
+        
         c.execute('SELECT start_time, kill_switch_active FROM stats WHERE id = 1')
         stats = c.fetchone()
         
@@ -164,6 +352,7 @@ class TerrariumDB:
         return {
             'total_agents': total_live,
             'current_generation': max_gen,
+            'total_comments': total_comments,
             'start_time': stats[0] if stats else None,
             'kill_switch_active': bool(stats[1]) if stats else False
         }
@@ -177,3 +366,18 @@ class TerrariumDB:
         
         conn.commit()
         conn.close()
+    
+    def get_agent_details(self, agent_id):
+        """Get full details for an agent"""
+        conn = sqlite3.connect(self.db_path)
+        c = conn.cursor()
+        
+        c.execute('''
+            SELECT id, agent_name, archetype, generation, first_post, interaction_count
+            FROM agents WHERE id = ?
+        ''', (agent_id,))
+        
+        result = c.fetchone()
+        conn.close()
+        
+        return result
